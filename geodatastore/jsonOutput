@@ -1,0 +1,204 @@
+import wsgiref.handlers
+import xml.dom.minidom
+from urllib import urlencode
+import traceback
+import sys
+
+from google.appengine.ext import db
+from google.appengine.ext import webapp
+
+class Geometry(db.Model):
+  name = db.StringProperty()
+  description = db.StringProperty(multiline=True)
+  type = db.StringProperty()
+  dateModified = db.DateProperty(auto_now_add=True)
+  coordinates = db.ListProperty(db.GeoPt, default=None)
+  bound = db.ListProperty(db.GeoPt, default=None)
+  timeStamp = db.DateProperty(default=None)
+  altitudes = db.ListProperty(float, default=None)
+class MainPage(webapp.RequestHandler):
+
+  def get(self):
+    self.response.headers['Content-Type'] = 'text/plain'
+    gp = db.GeoPt(1.0,1.0)
+    geo = Geometry(name='test',description='<b>test</b>',type='point',coordinates=[gp], bound=[1.0,1.0])
+    geo.put()
+
+
+def getCoordinates(gp):
+    lat,lon = 0.0,0.0
+    try:
+      lat = gp.lat
+      lon = gp.lon
+    except TypeError, ValueError:
+      lat = 0.0
+      lon = 0.0
+    return lat,lon
+
+def jsonOutput(geometries): 
+  geoJson = []
+  geoJson.append('{geometry:{')
+  geoJson.append('records:{')
+
+  points = []
+  for geometry in geometries:
+    coords = [] 
+    for i in range(0, len(geometry.coordinates)):
+      lat, lon = getCoordinates(geometry.coordinates[i])
+      alt = []
+      try:
+        alt = geometry.altitudes[i]
+      except IndexError:
+        alt = [0.0]
+      coords.append('lat: %s, lng: %s, altitude: %s' % (lat, lon, alt))
+      coordinates = '[{%s}]' % ('},{'.join(coords))
+    points.append('%s: {name: "%s", type: "%s", description: "%s", timeStamp: "%s", coordinates: %s}' %(geometry.key(), geometry.name,geometry.type, geometry.description,geometry.timeStamp, coordinates))
+
+  geoJson.append(','.join(points))
+  geoJson.append('}}}')
+  geoJsonOutput = ''.join(geoJson)
+  contentType = 'application/json'
+  return geoJsonOutput, contentType
+
+def kmlOutput(geometries):
+  # This creates the core document.
+  kmlDoc = xml.dom.minidom.Document()
+
+  # This creates the root element in the KML namespace.
+  kml = kmlDoc.createElementNS('http://earth.google.com/kml/2.2','kml')
+  kml.setAttribute('xmlns','http://earth.google.com/kml/2.2')
+
+  # This appends the root element to the document.
+  kml = kmlDoc.appendChild(kml)
+
+  # This creates the KML Document element and the styles.
+  document = kmlDoc.createElement('Document')
+    
+  for geometry in geometries:
+    place = kmlDoc.createElement('Placemark')
+    name = kmlDoc.createElement('name')
+    textNode = kmlDoc.createTextNode(geometry.name)
+    name.appendChild(textNode)
+    place.appendChild(name)
+    description = kmlDoc.createElement('description')
+    textNode = kmlDoc.createTextNode(geometry.description)
+    description.appendChild(textNode)
+    place.appendChild(description)
+    point = kmlDoc.createElement('Point')
+    coordinates = kmlDoc.createElement('coordinates')
+    lat,lon = getCoordinates(geometry.coordinates[0])
+    try:
+      altitude = geometry.altitudes[0]
+    except IndexError:
+      altitude = 0.0
+    coordinateValue = '%s,%s,%s' % (lon, lat, altitude)
+    textNode = kmlDoc.createTextNode(coordinateValue)
+    coordinates.appendChild(textNode)
+    point.appendChild(coordinates)
+    place.appendChild(point)
+    document.appendChild(place)
+  kml.appendChild(document)
+  contentType = 'application/vnd.google-earth.kml+xml' 
+  return kmlDoc.toprettyxml(encoding="utf-8"), contentType
+
+
+class Request(webapp.RequestHandler):
+
+  def get(self):
+    try:
+      operation = self.request.get('operation')
+      #operations = {"getall": self.getGeometries()}
+      #operations = {"add": self.addGeometries(), "getall": self.getGeometries(), "edit": self.editGeometries()}
+      #out,contentType = operations[operation]
+      out, contentType = '',''
+      if operation == 'getall':
+        self.getGeometries()
+      elif operation == 'add':
+        self.addGeometries()
+      elif operation == 'edit':
+        self.editGeometries
+      elif operation == 'delete'
+        self.deleteGeometries
+      else:
+        self.getGeometries
+
+      self.response.headers.add_header('Content-Type', contentType)
+      self.response.out.write(out)
+    except:
+      self.response.out.write('error')
+      traceback.print_exc()
+
+  def getGeometries(self):
+    limit = self.request.get('limit',default_value=10)
+    output = self.request.get('output',default_value='json')
+    geometries = Geometry.gql("WHERE type = :type LIMIT %s" % limit, type='point')
+    outputAction = {'json': jsonOutput(geometries),'kml': kmlOutput(geometries)}
+    out,contentType = outputAction.get(output)
+    return out,contentType
+
+  def addGeometries(self):
+    try:
+      lat = self.request.get('lat',allow_multiple=True)
+      long = self.request.get('lng',allow_multiple=True)
+      name = self.request.get('name')
+      alts = [0.0]
+      coords = []
+      for i in range(0, len(lat)):
+        gp = db.GeoPt(lat[i], long[i])
+        coords.append(gp)
+
+      description = self.request.get('description')
+      type = self.request.get('type',default_value='point')
+      bounds=[coords[0],coords[0]]
+      gp = Geometry(name=name,description=description,type=type,coordinates=coords,bound=bounds, altitudes=alts)
+      gp.put()
+      gps = []
+      gps.append(gp)
+      jsonResponse,contentType = jsonOutput(gps)
+      return jsonResponse,contentType
+
+    except TypeError, ValueError:
+      self.response.out.write("<html><body><p>Invalid inputs</p></body></html>")
+
+
+  def editGeometries(self):
+    try:
+      lat = self.request.get('lat',allow_multiple=True)
+      long = self.request.get('lng',allow_multiple=True)
+      name = self.request.get('name')
+      alts = [0.0]
+      coords = []
+      for i in range(0, len(lat)):
+        gp = db.GeoPt(lat[i], long[i])
+        coords.append(gp)
+
+      description = self.request.get('description')
+      type = self.request.get('type',default_value='point')
+      bounds=[coords[0],coords[0]]
+      gp = Geometry(name=name,description=description,type=type,
+                    coordinates=coords,bound=bounds, altitudes=alts)
+      gp.put()
+      gps = []
+      gps.append(gp)
+      jsonResponse,contentType = jsonOutput(gps)
+      return jsonResponse,contentType
+
+    except TypeError, ValueError:
+      self.response.out.write("<html><body><p>Invalid inputs</p></body></html>")
+
+
+  def deleteGeometries(self):
+    try:
+      key = str(self.request.get('key'))
+      gp = Geometry.get(key)
+      gp.delete()
+    except TypeError, ValueError:
+      self.response.out.write("<html><body><p>Invalid inputs</p></body></html>")
+
+application = webapp.WSGIApplication(
+                                     [('/', MainPage),
+                                      ('/gen2/request', Request)
+                                       ],
+                                     debug=True)
+
+wsgiref.handlers.CGIHandler().run(application)
