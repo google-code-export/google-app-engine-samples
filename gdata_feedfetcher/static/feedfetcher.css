@@ -1,0 +1,26 @@
+html {
+  margin:5px;
+  padding:5px;
+}
+#wrap {
+  margin:0 auto;
+  width:80%;
+}
+#header {
+  background:#e5ecf9;
+}
+#main {
+  float:left;
+  width:70%;  
+}
+#sidebar {
+  float:right;
+  width:30%;
+}
+#scopes {
+  background:#ddf8cc;
+}
+#tokens {
+  background:#fff4c2;
+}
+
