@@ -154,6 +154,8 @@ class Fetcher(webapp.RequestHandler):
         >List your Google Calendars</a><br/>
         <a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s"
         >List your blogs on Blogger</a><br/>
+        <!--<a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s"
+        >List your Gmail Contacts</a><br/>-->
         
 
         <p>In addition to reading information in Google Data feeds, 
@@ -166,11 +168,12 @@ class Fetcher(webapp.RequestHandler):
         <p>This app uses the <a 
         href="http://code.google.com/p/gdata-python-client/"
         >gdata-python-client</a> library.</p>
-    """ % ('http://www.blogger.com/feeds/32786009/posts/default',
+    """ % ('http://googledataapis.blogspot.com/feeds/posts/default',
         'http://docs.google.com/feeds/documents/private/full', 
         'http://www.google.com/calendar/feeds/default/owncalendars/full',
         'http://www.google.com/calendar/feeds/default/allcalendars/full',
-        'http://www.blogger.com/feeds/default/blogs'))
+        'http://www.blogger.com/feeds/default/blogs',
+        'http://www.google.com/m8/feeds/contacts/default/base'))
 
   def ManageAuth(self):
     self.client = gdata.service.GDataService()
@@ -226,13 +229,7 @@ class Fetcher(webapp.RequestHandler):
   def RenderFeed(self, feed):
     self.response.out.write('<h2>Feed Title: %s</h2>' % feed.title.text)
     for link in feed.link:
-      if link.rel == 'alternate' and link.type == 'text/html':
-        self.response.out.write(
-            '<a href="%s">alternate HTML</a><br/>' % link.href)
-      else:
-        self.response.out.write(
-            'Link: <a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s">%s link</a><br/>' % (
-                link.href, link.rel))
+      self.RenderLink(link)
     for entry in feed.entry:
       self.RenderEntry(entry)
 
@@ -243,13 +240,20 @@ class Fetcher(webapp.RequestHandler):
     elif entry.summary and entry.summary.text:
       self.response.out.write('<p>Summary: %s</p>' % entry.summary.text)
     for link in entry.link:
-      if link.rel == 'alternate' and link.type == 'text/html':
-        self.response.out.write(
-            '<a href="%s">alternate HTML</a><br/>' % link.href)
-      else:
-        self.response.out.write(
-            'Link: <a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s">%s link</a><br/>' % (
-                link.href, link.rel))
+      self.RenderLink(link)
+
+  def RenderLink(self, link):
+    if link.rel == 'alternate' and link.type == 'text/html':
+      self.response.out.write(
+          '<a href="%s">alternate HTML</a><br/>' % link.href)
+    elif link.type == 'application/atom+xml':
+      self.response.out.write(
+          '<a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s">Fetch %s link (%s)</a><br/>' % (
+              urllib.quote_plus(link.href), link.rel, link.type))
+    else:
+      self.response.out.write(
+          '<a href="%s">%s link (%s)</a><br/>' % (link.href, link.rel,
+              link.type))
     
   def UpgradeAndStoreToken(self):
     self.client.auth_token = self.token
