@@ -25,6 +25,7 @@ from google.appengine.api import urlfetch
 import urllib # Used to unescape URL parameters.
 import gdata.service
 import gdata.urlfetch
+import atom
 
 
 gdata.service.http_request_handler = gdata.urlfetch
@@ -70,6 +71,11 @@ class Fetcher(webapp.RequestHandler):
       elif param.startswith('xml'):
         self.show_xml = True
 
+    if self.show_xml:
+      checked_string = 'checked'
+    else:
+      checked_string = ''
+
     self.response.out.write("""<html><head>
          <title>Google Data Feed Fetcher: read Google Data API Atom feeds
          </title>
@@ -79,9 +85,9 @@ class Fetcher(webapp.RequestHandler):
          <form action="/" method="get">
          Target URL: <input type="text" size="60" name="feed_url" value="%s">
          </input><input type="submit" value="Fetch Atom"></input>
-         Show XML:<input type="checkbox" name="xml" value="true" ></input>
+         Show XML:<input type="checkbox" name="xml" value="true" %s></input>
          <a href="http://gdata-feedfetcher.appspot.com/">Home</a> """ % (
-             self.feed_url or ''))
+             (self.feed_url or ''), checked_string))
     
 
     # If we received a token for a specific feed_url and not a more general
@@ -189,8 +195,17 @@ class Fetcher(webapp.RequestHandler):
     if not self.client:
       self.client = gdata.service.GDataService()
     try:
-      feed = self.client.Get(self.feed_url, converter=str)
-      self.response.out.write(cgi.escape(feed))
+      if self.show_xml:
+        response = self.client.Get(self.feed_url, converter=str)
+        self.response.out.write(cgi.escape(response))
+      else:
+        response = self.client.Get(self.feed_url)
+        if isinstance(response, atom.Feed):
+          self.RenderFeed(response)
+        elif isinstance(response, atom.Entry):
+          self.RenderEntry(response)
+        else:
+          self.response.out.write(cgi.escape(response))
     except gdata.service.RequestError, request_error:
       # If fetching fails, then tell the user that they need to login to
       # authorize this app by logging in at the following URL.
@@ -208,6 +223,33 @@ class Fetcher(webapp.RequestHandler):
             'Something else went wrong, here is the error object: %s ' % (
                 str(request_error[0])))
 
+  def RenderFeed(self, feed):
+    self.response.out.write('<h2>Feed Title: %s</h2>' % feed.title.text)
+    for link in feed.link:
+      if link.rel == 'alternate' and link.type == 'text/html':
+        self.response.out.write(
+            '<a href="%s">alternate HTML</a><br/>' % link.href)
+      else:
+        self.response.out.write(
+            'Link: <a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s">%s link</a><br/>' % (
+                link.href, link.rel))
+    for entry in feed.entry:
+      self.RenderEntry(entry)
+
+  def RenderEntry(self, entry):
+    self.response.out.write('<h3>Entry Title: %s</h3>' % entry.title.text)
+    if entry.content and entry.content.text:
+      self.response.out.write('<p>Content: %s</p>' % entry.content.text)
+    elif entry.summary and entry.summary.text:
+      self.response.out.write('<p>Summary: %s</p>' % entry.summary.text)
+    for link in entry.link:
+      if link.rel == 'alternate' and link.type == 'text/html':
+        self.response.out.write(
+            '<a href="%s">alternate HTML</a><br/>' % link.href)
+      else:
+        self.response.out.write(
+            'Link: <a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s">%s link</a><br/>' % (
+                link.href, link.rel))
     
   def UpgradeAndStoreToken(self):
     self.client.auth_token = self.token
