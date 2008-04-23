@@ -49,7 +49,15 @@ class Fetcher(webapp.RequestHandler):
 
   def get(self):
     self.response.headers['Content-Type'] = 'text/html'
-
+    
+    self.response.out.write("""<!DOCTYPE html><html><head>
+         <title>Google Data Feed Fetcher: read Google Data API Atom feeds
+         </title>
+         <link rel="stylesheet" type="text/css" 
+               href="static/feedfetcher.css"/>
+         </head><body>""")
+       
+    self.response.out.write("""<div id="nav"><a href="/">Home</a>""")
     self.current_user = users.GetCurrentUser()
     if self.current_user:
       self.response.out.write('<a href="%s">Sign Out</a>' % (
@@ -57,7 +65,7 @@ class Fetcher(webapp.RequestHandler):
     else:
       self.response.out.write('<a href="%s">Sign In</a>' % (
           users.CreateLoginURL(self.request.uri)))
-    self.response.out.write('</form></div>')
+    self.response.out.write('</div>')
 
     for param in self.request.query.split('&'):
       if param.startswith('token_scope'):
@@ -75,19 +83,14 @@ class Fetcher(webapp.RequestHandler):
       checked_string = 'checked'
     else:
       checked_string = ''
-
-    self.response.out.write("""<html><head>
-         <title>Google Data Feed Fetcher: read Google Data API Atom feeds
-         </title>
-         <link rel="stylesheet" type="text/css" 
-               href="static/feedfetcher.css"/>
-         </head><body><div id="wrap"><div id="header">
+      
+    self.response.out.write("""<div id="wrap"><div id="header">
          <form action="/" method="get">
-         Target URL: <input type="text" size="60" name="feed_url" value="%s">
+         <label id="feed_url_label" for="feed_url">Target URL:</label> <input type="text" size="60" name="feed_url" id="feed_url" value="%s">
          </input><input type="submit" value="Fetch Atom"></input>
-         Show XML:<input type="checkbox" name="xml" value="true" %s></input>
-         <a href="http://gdata-feedfetcher.appspot.com/">Home</a> """ % (
-             (self.feed_url or ''), checked_string))
+         <label for="xml">Show XML:</label> <input type="checkbox" id="xml" name="xml" value="true" %s>
+         </input>""" % ((self.feed_url or ''), checked_string))
+    self.response.out.write('</form></div>')
     
 
     # If we received a token for a specific feed_url and not a more general
@@ -111,7 +114,7 @@ class Fetcher(webapp.RequestHandler):
           <li><a href="%s">Blogger</a></li>
           <li><a href="%s">Calendar</a></li>
           <li><a href="%s">Google Documents</a></li>
-          </ul></div><br/><div id="tokens">""" % (
+          </ul></div><div id="tokens">""" % (
               self.GenerateScopeRequestLink('http://www.blogger.com/feeds/'),
               self.GenerateScopeRequestLink(
                   'http://www.google.com/calendar/feeds'),
@@ -124,7 +127,7 @@ class Fetcher(webapp.RequestHandler):
     
   def GenerateScopeRequestLink(self, scope):
     return self.client.GenerateAuthSubURL(
-        'http://gdata-feedfetcher.appspot.com/?token_scope=%s' % (scope),
+        '/?token_scope=%s' % (scope),
         scope, secure=False, session=True)
 
   def ShowInstructions(self):
@@ -143,19 +146,19 @@ class Fetcher(webapp.RequestHandler):
 
         <h4>Sample Feed URLs</h4>
         <h5>Publicly viewable feeds</h5>
-        <a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s"
-        >Recent posts in the Google Data APIs blog</a><br/>
+        <ul><li><a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s"
+        >Recent posts in the Google Data APIs blog</a></li></ul>
         <h5>Feeds which require authorization</h5>
-        <a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s"
-        >List your Google Documents</a><br/>
-        <a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s"
-        >List the Google Calendars that you own</a><br/>
-        <a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s"
-        >List your Google Calendars</a><br/>
-        <a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s"
-        >List your blogs on Blogger</a><br/>
-        <!--<a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s"
-        >List your Gmail Contacts</a><br/>-->
+        <ul><li><a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s"
+        >List your Google Documents</a></li>
+        <li><a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s"
+        >List the Google Calendars that you own</a></li>
+        <li><a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s"
+        >List your Google Calendars</a></li>
+        <li><a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s"
+        >List your blogs on Blogger</a></li>
+        <!--<li><a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s"
+        >List your Gmail Contacts</a></li>--></ul>
         
 
         <p>In addition to reading information in Google Data feeds, 
@@ -288,7 +291,7 @@ class Fetcher(webapp.RequestHandler):
     stored_tokens = StoredToken.gql('WHERE user_email = :1', 
         self.current_user.email())
     for token in stored_tokens:
-        self.response.out.write('<li><a href="/?feed_url=%s">%s*</a></li>' % (
+        self.response.out.write('<li><a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s">%s*</a></li>' % (
             urllib.quote_plus(token.target_url), token.target_url))
     self.response.out.write(
         '</ul>To erase your stored tokens, <a href="%s">click here</a>' % (
