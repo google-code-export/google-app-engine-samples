@@ -26,12 +26,13 @@ form {
   font-weight: bold;
 }
 #main {
-  float:left;
-  width:68%;  
+  float: left;
+  width: 68%;
+  padding-left: 5px;
 }
 #sidebar {
-  float:right;
-  width:28%;
+  float: right;
+  width: 28%;
 }
 h1,
 #scopes h4,
