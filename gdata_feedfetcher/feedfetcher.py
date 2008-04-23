@@ -85,10 +85,11 @@ class Fetcher(webapp.RequestHandler):
       checked_string = ''
       
     self.response.out.write("""<div id="wrap"><div id="header">
+         <h1>Google Data Feed Fetcher</h1>
          <form action="/" method="get">
          <label id="feed_url_label" for="feed_url">Target URL:</label> <input type="text" size="60" name="feed_url" id="feed_url" value="%s">
          </input><input type="submit" value="Fetch Atom"></input>
-         <label for="xml">Show XML:</label> <input type="checkbox" id="xml" name="xml" value="true" %s>
+         <label for="xml">Show XML:</label><input type="checkbox" id="xml" name="xml" value="true" %s>
          </input>""" % ((self.feed_url or ''), checked_string))
     self.response.out.write('</form></div>')
     
