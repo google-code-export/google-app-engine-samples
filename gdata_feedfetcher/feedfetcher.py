@@ -148,7 +148,11 @@ class Fetcher(webapp.RequestHandler):
         <h4>Sample Feed URLs</h4>
         <h5>Publicly viewable feeds</h5>
         <ul><li><a href="/?feed_url=%s"
-        >Recent posts in the Google Data APIs blog</a></li></ul>
+        >Recent posts in the Google App Engine blog</a></li>
+        <li><a href="/?feed_url=%s"
+        >Recent posts in the Google Data APIs blog</a></li>
+        <li><a href="/?feed_url=%s"
+        >See events on the Google Developer Events calendar</a></li></ul>
         <h5>Feeds which require authorization</h5>
         <ul><li><a href="/?feed_url=%s"
         >List your Google Documents</a></li>
@@ -161,7 +165,11 @@ class Fetcher(webapp.RequestHandler):
         <!--<li><a href="/?feed_url=%s"
         >List your Gmail Contacts</a></li>--></ul>
         
-
+        <p>To learn more about how this sample works, read the article on
+        <a href="http://code.google.com/appengine/articles/gdata.html"
+        >Retrieving Authenticated Google Data Feeds with
+        Google App Engine</a>.</p>
+ 
         <p>In addition to reading information in Google Data feeds, 
         it is also possible to write to some of the Google Data services
         once the user has granted permission to your app. For more details
@@ -172,7 +180,9 @@ class Fetcher(webapp.RequestHandler):
         <p>This app uses the <a 
         href="http://code.google.com/p/gdata-python-client/"
         >gdata-python-client</a> library.</p>
-    """ % ('http://googledataapis.blogspot.com/feeds/posts/default',
+    """ % ('http://www.blogger.com/feeds/8501956666581132164/posts/default',
+        'http://googledataapis.blogspot.com/feeds/posts/default',
+        urllib.quote_plus('http://www.google.com/calendar/feeds/developer-calendar@google.com/public/basic'),
         'http://docs.google.com/feeds/documents/private/full', 
         'http://www.google.com/calendar/feeds/default/owncalendars/full',
         'http://www.google.com/calendar/feeds/default/allcalendars/full',
