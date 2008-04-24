@@ -147,18 +147,18 @@ class Fetcher(webapp.RequestHandler):
 
         <h4>Sample Feed URLs</h4>
         <h5>Publicly viewable feeds</h5>
-        <ul><li><a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s"
+        <ul><li><a href="/?feed_url=%s"
         >Recent posts in the Google Data APIs blog</a></li></ul>
         <h5>Feeds which require authorization</h5>
-        <ul><li><a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s"
+        <ul><li><a href="/?feed_url=%s"
         >List your Google Documents</a></li>
-        <li><a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s"
+        <li><a href="/?feed_url=%s"
         >List the Google Calendars that you own</a></li>
-        <li><a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s"
+        <li><a href="/?feed_url=%s"
         >List your Google Calendars</a></li>
-        <li><a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s"
+        <li><a href="/?feed_url=%s"
         >List your blogs on Blogger</a></li>
-        <!--<li><a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s"
+        <!--<li><a href="/?feed_url=%s"
         >List your Gmail Contacts</a></li>--></ul>
         
 
@@ -249,14 +249,14 @@ class Fetcher(webapp.RequestHandler):
   def RenderLink(self, link):
     if link.rel == 'alternate' and link.type == 'text/html':
       self.response.out.write(
-          '<a href="%s">alternate HTML</a><br/>' % link.href)
+          'Link: <a href="%s">alternate HTML</a><br/>' % link.href)
     elif link.type == 'application/atom+xml':
       self.response.out.write(
-          '<a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s">Fetch %s link (%s)</a><br/>' % (
+          'Link: <a href="/?feed_url=%s">Fetch %s link (%s)</a><br/>' % (
               urllib.quote_plus(link.href), link.rel, link.type))
     else:
       self.response.out.write(
-          '<a href="%s">%s link (%s)</a><br/>' % (link.href, link.rel,
+          'Link: <a href="%s">%s link (%s)</a><br/>' % (link.href, link.rel,
               link.type))
     
   def UpgradeAndStoreToken(self):
@@ -292,7 +292,7 @@ class Fetcher(webapp.RequestHandler):
     stored_tokens = StoredToken.gql('WHERE user_email = :1', 
         self.current_user.email())
     for token in stored_tokens:
-        self.response.out.write('<li><a href="http://gdata-feedfetcher.appspot.com/?feed_url=%s">%s*</a></li>' % (
+        self.response.out.write('<li><a href="/?feed_url=%s">%s*</a></li>' % (
             urllib.quote_plus(token.target_url), token.target_url))
     self.response.out.write(
         '</ul>To erase your stored tokens, <a href="%s">click here</a>' % (
