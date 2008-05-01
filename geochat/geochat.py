@@ -52,7 +52,7 @@ class MainHandler(webapp.RequestHandler):
 
     template_data = {}
     
-    user = users.GetCurrentUser()
+    user = users.get_current_user()
     if user:
       
       user_settings = settings.get(user)
@@ -97,7 +97,7 @@ class SettingsHandler(webapp.RequestHandler):
 
     template_data = {}
 
-    user = users.GetCurrentUser()
+    user = users.get_current_user()
     if user == None:      
       self.redirect(users.CreateLoginURL(self.request.uri))
       return
@@ -126,7 +126,7 @@ class SettingsHandler(webapp.RequestHandler):
     
   def post(self):
     
-    user = users.GetCurrentUser()
+    user = users.get_current_user()
     if user == None:      
       self.redirect(users.CreateLoginURL(self.request.uri))
       return
@@ -154,7 +154,7 @@ class HelpHandler(webapp.RequestHandler):
 
     template_data = {}
 
-    user = users.GetCurrentUser()
+    user = users.get_current_user()
     if user:
       template_data = {
         'auth_url': users.CreateLogoutURL(self.request.uri),

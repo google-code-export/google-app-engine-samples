@@ -135,7 +135,7 @@ class MoveHandler(webapp.RequestHandler):
     global move_cache
 
     # Get the current user and return if not logged in.
-    user = users.GetCurrentUser()
+    user = users.get_current_user()
     if user == None:      
       return
     
@@ -165,7 +165,7 @@ class ChatHandler(webapp.RequestHandler):
     global chat_cache
     
     # Get the current user and return if not logged in.
-    user = users.GetCurrentUser()
+    user = users.get_current_User()
     if user == None:      
       return
 
