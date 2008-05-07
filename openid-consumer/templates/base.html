@@ -1,0 +1,35 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+  <title>{% block title %} OpenID Consumer {% endblock %}</title>
+  <link href="/static/base.css" rel="stylesheet" type="text/css"/>
+  {% block head %}{% endblock %}
+</head>
+
+<body {% block bodyattributes %}{% endblock %}>
+
+{% block header %}
+<div id="navbar">
+  <a href="http://code.google.com/appengine/">Google App Engine</a>
+  | <nobr><a href="http://openid.net/">
+    <img src="/static/openid-icon.png" />OpenID</a></nobr>
+  | Source coming soon
+    <!--<a href="http://code.google.com/p/google-app-engine-samples/">
+      Download source</a>-->
+</div>
+
+<div id="header">
+  <img id ="openid-logo" alt="OpenID" src="/static/openid-logo.png" />
+  <p id="title">Example Consumer</p>
+</div>
+{% endblock %}
+
+<div id="body">
+  {% block body %}{% endblock %}
+</div>
+
+</body>
+</html>
