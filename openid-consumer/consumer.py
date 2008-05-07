@@ -250,52 +250,56 @@ class LoginHandler(Handler):
     session = Session()
     session.put()
 
-    parts = urlparse.urlparse(self.request.uri)
+    parts = list(urlparse.urlparse(self.request.uri))
     parts[2] = 'finish'
     parts[4] = 'session_id=%d' % session.key().id()
     parts[5] = ''
     return_to = urlparse.urlunparse(parts)
-    realm = urlparse.urlunparse(parts[0:1] + [''] * 4)
+    realm = urlparse.urlunparse(parts[0:2] + [''] * 4)
 
-    logging.info('redirecting to %s' % auth_request.redirectURL(realm, return_to))
+#     logging.debug('Redirecting to %s' %
+#                   auth_request.redirectURL(realm, return_to))
     self.redirect(auth_request.redirectURL(realm, return_to))
 
 
-class FinishLoginHandler(Handler):
+class FinishHandler(Handler):
   """Handle a redirect from the provider."""
-  def post(self):
+  def get(self):
     args = self.args_to_dict()
     response = self.get_consumer().complete(args, self.request.uri)
-    self.response.write('\r\n\r\n%s\r\n\r\n' % self.response.status)
+    self.response.out.write(
+      '\r\n\r\n%s\n%s\r\n\r\n' % (response.status, response.message))
 
-    if args.has_key('yes'):
-      logging.debug('Confirming identity to %s' % oidrequest.trust_root)
-      if args.get('remember', '') == 'yes':
-        logging.info('Setting cookie to remember openid login for two weeks')
+    self.consumer.consumer.store.cleanup()
 
-        expires = datetime.datetime.now() + datetime.timedelta(weeks=2)
-        expires_rfc822 = expires.strftime('%a, %d %b %Y %H:%M:%S +0000')
-        self.response.headers.add_header(
-          'Set-Cookie', 'openid_remembered=yes; expires=%s' % expires_rfc822)
+#     if args.has_key('yes'):
+#       logging.debug('Confirming identity to %s' % oidrequest.trust_root)
+#       if args.get('remember', '') == 'yes':
+#         logging.info('Setting cookie to remember openid login for two weeks')
 
-      self.store_login(oidrequest, 'confirmed')
-      self.respond(oidrequest.answer(True))
+#         expires = datetime.datetime.now() + datetime.timedelta(weeks=2)
+#         expires_rfc822 = expires.strftime('%a, %d %b %Y %H:%M:%S +0000')
+#         self.response.headers.add_header(
+#           'Set-Cookie', 'openid_remembered=yes; expires=%s' % expires_rfc822)
 
-    elif args.has_key('no'):
-      logging.debug('Login denied, sending cancel to %s' %
-                    oidrequest.trust_root)
-      self.store_login(oidrequest, 'declined')
-      return self.respond(oidrequest.answer(False))
+#       self.store_login(oidrequest, 'confirmed')
+#       self.respond(oidrequest.answer(True))
 
-    else:
-      self.report_error('Bad login request.')
+#     elif args.has_key('no'):
+#       logging.debug('Login denied, sending cancel to %s' %
+#                     oidrequest.trust_root)
+#       self.store_login(oidrequest, 'declined')
+#       return self.respond(oidrequest.answer(False))
+
+#     else:
+#       self.report_error('Bad login request.')
 
 
 # Map URLs to our RequestHandler classes above
 _URLS = [
   ('/', FrontPage),
   ('/login', LoginHandler),
-  ('/finish', FinishLoginHandler),
+  ('/finish', FinishHandler),
 ]
 
 def main(argv):
