@@ -12,11 +12,13 @@
 <body {% block bodyattributes %}{% endblock %}>
 
 <div id="navbar">
-  <nobr><a href="http://openid.net/">
-    <img src="/static/openid-icon.png" />OpenID</a></nobr>
-  | <a href="http://code.google.com/appengine/">Google App Engine</a>
-  | <a href="http://code.google.com/p/google-app-engine-samples/downloads/list">
+    <a href="http://code.google.com/p/google-app-engine-samples/downloads/list">
       Download source</a>
+  | <nobr><a href="http://openid.net/">
+      <img src="/static/openid-icon.png" />OpenID</a></nobr>
+  | <a href="http://code.google.com/appengine/">
+      <img src="/static/appengine_button_noborder.gif"
+           style="vertical-align: middle" /></a>
 </div>
 
 <div id="header">
@@ -25,6 +27,8 @@
 </div>
 
 <div id="body">
+
+<table><tr><td>
 <form method="post" action="/login">
 <p>Enter your OpenID URL:</p>
 <p>
@@ -36,7 +40,31 @@
 <label for="display">Display this in the list of recent logins</label>
 </p></form>
 
-{% block response %}{% endblock %}
+</td><td>
+
+{% if response %}
+  {% ifequal response.status "success" %}
+    <nobr><a href="{{ response.endpoint.claimed_id }}">
+      <img src="/static/openid-icon.png" />{{ response.endpoint.claimed_id }}
+      </a></nobr><br />
+    Server: {{ response.endpoint.server_url }}
+    {% if pape_data.auth_policies %}
+      <i>{% for policy in pape_data.auth_policies %}{{ policy }} {% endfor %}</i>
+    {% endif %}
+  <!--   {% if response.message %} <br /> {{ response.message }} {% endif %} -->
+    {% for field in sreg_data %}
+      <br /> {{ field.0 }}: {{ field.1 }}
+    {% endfor %}
+  
+  {% else %}
+    <span class="cancel">Login cancelled.</a>
+  {% endifequal %}
+
+{% else %}{% if error %}
+  <span class="error">{{ error }}</span>
+
+{% endif %}{% endif %}
+</td></tr></table>
 
 <div class="top">
   <div class="left"></div>
@@ -71,11 +99,14 @@
 
 <div class="bottom">
 <table class="key"><tr>
-  <td class="confirmed">
-    <img class="icon" class="icon" src="/static/confirmed.png" /> Confirmed
+  <td class="success">
+    <img class="icon" src="/static/success.png" /> Success
   </td>
-  <td class="declined">
-    <img class="icon" src="/static/declined.png" /> Declined
+  <td class="cancel">
+    <img class="icon" src="/static/cancel.png" /> Cancel
+  </td>
+  <td class="failure">
+    <img class="icon" src="/static/failure.png" /> Failure
   </td>
 </tr></table>
 
