@@ -181,17 +181,6 @@ class DatastoreStore(OpenIDStore):
     """
     return self.cleanupNonces(), self.cleanupAssociations()
 
-  def getAuthKey(self):
-    """
-    This method returns a key used to sign the tokens, to ensure that they
-    haven't been tampered with in transit. It should return the same key every
-    time it is called. The key returned should be C{L{AUTH_KEY_LEN}} bytes
-    long.
-    """
-    auth_key = 'My Insecure Auth Key'
-    assert len(auth_key) == self.AUTH_KEY_LEN
-    return auth_key
-
   def _delete_first(self, query):
     """Deletes the first result for the given query.
 
