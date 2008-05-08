@@ -59,6 +59,7 @@ from google.appengine.ext.webapp import template
 from openid import fetchers
 from openid.consumer.consumer import Consumer
 from openid.consumer import discover
+from openid.extensions import pape, sreg
 import fetcher
 import store
 
@@ -68,10 +69,10 @@ _DEBUG = False
 
 class Login(db.Model):
   """A completed OpenID login."""
-  result = db.StringProperty(choices=('confirmed', 'declined'))
+  status = db.StringProperty(choices=('success', 'cancel', 'failure'))
   openid = db.LinkProperty()
-  provider = db.LinkProperty()
-  time = db.DateTimeProperty(auto_now_add=True)
+  server = db.LinkProperty()
+  timestamp = db.DateTimeProperty(auto_now_add=True)
 
 
 class Session(db.Expando):
@@ -118,71 +119,6 @@ class Handler(webapp.RequestHandler):
         self.session = Session()
 
     return self.session
-    
-
-#   def has_cookie(self):
-#     """Returns True if we "remember" the user, False otherwise.
-
-#     Determines whether the user has used OpenID before and asked us to
-#     remember them - ie, if the user agent provided an 'openid_remembered'
-#     cookie.
-
-#     Returns:
-#       True if we remember the user, False otherwise.
-#     """
-#     cookies = os.environ.get('HTTP_COOKIE', None)
-#     if cookies:
-#       morsel = Cookie.BaseCookie(cookies).get('openid_remembered')
-#       if morsel and morsel.value == 'yes':
-#         return True
-
-#     return False
-
-#   def get_openid_request(self):
-#     """Creates and OpenIDRequest for this request, if appropriate.
-
-#     If this request is not an OpenID request, returns None. If an error occurs
-#     while parsing the arguments, returns False and shows the error page.
-
-#     Return:
-#       An OpenIDRequest, if this user request is an OpenID request. Otherwise
-#       False.
-#     """
-#     try:
-#       oidrequest = oidconsumer.decodeRequest(self.args_to_dict())
-#       logging.debug('OpenID request: %s' % oidrequest)
-#       return oidrequest
-#     except:
-#       trace = ''.join(traceback.format_exception(*sys.exc_info()))
-#       self.ReportError('Error parsing OpenID request:\n%s' % trace)
-#       return False
-
-#   def respond(self, oidresponse):
-#     """Send an OpenID response.
-
-#     Args:
-#       oidresponse: OpenIDResponse
-#       The response to send, usually created by OpenIDRequest.answer().
-#     """
-#     logging.warning('respond: oidresponse.request.mode ' + oidresponse.request.mode)
-
-#     logging.debug('Using response: %s' % oidresponse)
-#     encoded_response = oidconsumer.encodeResponse(oidresponse)
-
-#     # update() would be nice, but wsgiref.headers.Headers doesn't implement it
-#     for header, value in encoded_response.headers.items():
-#       self.response.headers[header] = str(value)
-
-#     if encoded_response.code in (301, 302):
-#       self.redirect(self.response.headers['location'])
-#     else:
-#       self.response.set_status(encoded_response.code)
-
-#     if encoded_response.body:
-#       logging.debug('Sending response body: %s' % encoded_response.body)
-#       self.response.out.write(encoded_response.body)
-#     else:
-#       self.response.out.write('')
 
   def render(self, template_name, extra_values={}):
     """render the given template, including the extra (optional) values.
@@ -194,7 +130,12 @@ class Handler(webapp.RequestHandler):
       extra_values: dict
       Template values to provide to the template.
     """
+    query = Login.gql('ORDER BY timestamp DESC')
+
     values = {
+      'response': {},
+      'openid': '',
+      'logins': query.fetch(20),
       'request': self.request,
       'debug': self.request.get('deb'),
     }
@@ -229,8 +170,7 @@ class Handler(webapp.RequestHandler):
 class FrontPage(Handler):
   """Show the default OpenID page, with the last 10 logins for this user."""
   def get(self):
-    logins = []
-    self.render('index', vars())
+    self.render('index')
 
 
 class LoginHandler(Handler):
@@ -250,6 +190,15 @@ class LoginHandler(Handler):
     session = Session()
     session.put()
 
+    sreg_request = sreg.SRegRequest(optional=['nickname', 'fullname', 'email'])
+    auth_request.addExtension(sreg_request)
+
+    pape_request = pape.Request([pape.AUTH_MULTI_FACTOR,
+                                 pape.AUTH_MULTI_FACTOR_PHYSICAL,
+                                 pape.AUTH_PHISHING_RESISTANT,
+                                 ])
+    auth_request.addExtension(pape_request)
+
     parts = list(urlparse.urlparse(self.request.uri))
     parts[2] = 'finish'
     parts[4] = 'session_id=%d' % session.key().id()
@@ -267,32 +216,24 @@ class FinishHandler(Handler):
   def get(self):
     args = self.args_to_dict()
     response = self.get_consumer().complete(args, self.request.uri)
-    self.response.out.write(
-      '\r\n\r\n%s\n%s\r\n\r\n' % (response.status, response.message))
+    assert response.status in Login.status.choices
 
-    self.consumer.consumer.store.cleanup()
+    if (response.status == 'success'):
+      sreg_data = sreg.SRegResponse.fromSuccessResponse(response).items()
+#     sreg_keys = sreg_data.keys()
+#     sreg_values = sreg_data.values()
+      pape_data = pape.Response.fromSuccessResponse(response)
 
-#     if args.has_key('yes'):
-#       logging.debug('Confirming identity to %s' % oidrequest.trust_root)
-#       if args.get('remember', '') == 'yes':
-#         logging.info('Setting cookie to remember openid login for two weeks')
+#     print >> sys.stderr, response.status
+    login = Login(status=response.status,
+                  openid=response.endpoint.claimed_id,
+                  server=response.endpoint.server_url)
+    login.put()
 
-#         expires = datetime.datetime.now() + datetime.timedelta(weeks=2)
-#         expires_rfc822 = expires.strftime('%a, %d %b %Y %H:%M:%S +0000')
-#         self.response.headers.add_header(
-#           'Set-Cookie', 'openid_remembered=yes; expires=%s' % expires_rfc822)
+    self.render('response', locals())
+#     self.response.out.write(
+#       '\r\n\r\n%s\n%s\r\n\r\n' % (response.status, response.message))
 
-#       self.store_login(oidrequest, 'confirmed')
-#       self.respond(oidrequest.answer(True))
-
-#     elif args.has_key('no'):
-#       logging.debug('Login denied, sending cancel to %s' %
-#                     oidrequest.trust_root)
-#       self.store_login(oidrequest, 'declined')
-#       return self.respond(oidrequest.answer(False))
-
-#     else:
-#       self.report_error('Bad login request.')
 
 
 # Map URLs to our RequestHandler classes above
