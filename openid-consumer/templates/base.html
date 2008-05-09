@@ -84,7 +84,7 @@
         {% ifnotequal login.status "failure" %}
           <img src="/static/openid-icon.png" />
         {% endifnotequal %}
-        {{ login.claimed_id }}</a>
+        {{ login.display_name }}</a>
     </td>
     <td class="timestamp">
       {{ login.friendly_time }}

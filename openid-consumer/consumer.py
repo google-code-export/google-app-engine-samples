@@ -148,6 +148,7 @@ class Handler(webapp.RequestHandler):
     """
     logins = Login.gql('ORDER BY timestamp DESC').fetch(20)
     for login in logins:
+      login.display_name = self.display_name(login.claimed_id)
       login.friendly_time = self.relative_time(login.timestamp)
 
     values = {
@@ -231,8 +232,10 @@ class Handler(webapp.RequestHandler):
     Returns:
       string
     """
+    if not openid_url:
+      return 'None'
+
     username_re = '[\w.+-]+'
-    common_tlds = ('com', 'org', 'net', 'edu', 'info', 'biz', 'gov', 'mil', 'us')
 
     parts = urlparse.urlparse(openid_url)
 
@@ -249,27 +252,27 @@ class Handler(webapp.RequestHandler):
       return sanitize(match.group(2))
 
     # is the username in the path?
-    path = parts.path[1:]
-    if re.match(username_re, path):
-      return sanitize(path)
+    path = parts.path.split('/')
+    if re.match(username_re, path[-1]):
+      return sanitize(path[-1])
 
     # use the hostname
-    host = parts.hostname
-    host_parts = host.split('.')
+    host = parts.hostname.split('.')
+    if len(host) == 1:
+      return host[0]
 
-    # strip the tld if it's not interesting
-    for tld in tlds_to_strip:
-      if host.endswith(tld):
-        host = host[:-(len(tld))]
-      elif host[-6:-2] == '.co.'
-        host = host[:-6]
+    # strip common tlds and country code tlds
+    common_tlds = ('com', 'org', 'net', 'edu', 'info', 'biz', 'gov', 'mil')
+    if host[-1] in common_tlds or len(host[-1]) == 2:
+      host = host[:-1]
+    if host[-1] == 'co':
+      host = host[:-1]
 
-    if len(host_parts) >= 3 && host[0] != 'www':
-      return sanitize('.'.join(host_parts[:-2]
-      host = host[4:]
+    # strip www prefix
+    if host[0] == 'www':
+      host = host[1:]
 
-    $host =~ s/:.+//;
-    $host =~ s/^www\.//i;
+    return sanitize('.'.join(host))
 
 
 class FrontPage(Handler):
