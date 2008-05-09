@@ -112,9 +112,17 @@ img#openid-logo {
   font-weight: bold;
 }
 
-.warning {
+.error {
   color: red;
   font-style: italic;
+}
+
+span.cancel {
+  color: #55aa55;
+}
+
+span.cancel {
+  color: #aaaa55;
 }
 
 /*
@@ -195,30 +203,30 @@ table td {
 /*
  * Logins table
  */
-.confirmed {
-  border: 1px dotted #22aa22;
-  background-color: #aaffaa;
-}
-
-tr.confirmed:hover {
-  background-color: #ddffdd;
-}
-
-.remembered {
+tr.success, td.success, tr.cancel, td.cancel {
   border: 1px dotted #88dd88;
   background-color: #ccffcc;
 }
 
-tr.remembered:hover {
-  background-color: #ddffdd;
+tr.success:hover, tr.cancel:hover {
+  background-color: #eeffee;
 }
 
-.declined {
-  border: 1px dotted #aa2222;
-  background-color: #ffbbbb;
+/* tr.cancel, td.cancel { */
+/*   border: 1px dotted #dddd88; */
+/*   background-color: #ffffdd; */
+/* } */
+
+/* tr.cancel:hover { */
+/*   background-color: #ffffee; */
+/* } */
+
+tr.failure, td.failure {
+  border: 1px dotted #dd8888;
+  background-color: #ffcccc;
 }
 
-tr.declined:hover {
+tr.failure:hover {
   background-color: #ffdddd;
 }
 
