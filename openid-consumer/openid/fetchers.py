@@ -172,6 +172,8 @@ class ExceptionWrappingFetcher(HTTPFetcher):
         except self.uncaught_exceptions:
             raise
         except:
+            import logging
+            logging.exception('qwert2')
             exc_cls, exc_inst = sys.exc_info()[:2]
             if exc_inst is None:
                 # string exceptions

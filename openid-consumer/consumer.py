@@ -63,14 +63,6 @@ import store
 _DEBUG = False
 
 
-class Login(db.Model):
-  """A completed OpenID login."""
-  status = db.StringProperty(choices=('success', 'cancel', 'failure'))
-  claimed_id = db.LinkProperty()
-  server_url = db.LinkProperty()
-  timestamp = db.DateTimeProperty(auto_now_add=True)
-
-
 class Session(db.Expando):
   """An in-progress OpenID login."""
   claimed_id = db.StringProperty()
@@ -78,13 +70,20 @@ class Session(db.Expando):
   store_and_display = db.BooleanProperty()
 
 
+class Login(db.Model):
+  """A completed OpenID login."""
+  status = db.StringProperty(choices=('success', 'cancel', 'failure'))
+  claimed_id = db.LinkProperty()
+  server_url = db.LinkProperty()
+  timestamp = db.DateTimeProperty(auto_now_add=True)
+  session = db.ReferenceProperty(Session)
+
+
 class Handler(webapp.RequestHandler):
   """A base handler class with a couple OpenID-specific utilities."""
   consumer = None
   session = None
   session_args = None
-
-  
 
   def __init__(self):
     self.session_args = {}
@@ -94,7 +93,8 @@ class Handler(webapp.RequestHandler):
     """
     if not self.consumer:
       fetchers.setDefaultFetcher(fetcher.UrlfetchFetcher())
-      self.load_session()
+      if not self.load_session():
+        return
       self.consumer = Consumer(self.session_args, store.DatastoreStore())
 
     return self.consumer
@@ -118,7 +118,8 @@ class Handler(webapp.RequestHandler):
           self.session = db.get(db.Key.from_path('Session', int(id)))
           assert self.session
         except (AssertionError, db.Error), e:
-          self.render({'error': 'Invalid session id: %d' % id})
+          self.report_error('Invalid session id: %d' % id)
+          return None
 
         fields = self.session.dynamic_properties()
         self.session_args = dict((f, getattr(self.session, f)) for f in fields)
@@ -127,6 +128,8 @@ class Handler(webapp.RequestHandler):
         self.session_args = {}
         self.session = Session()
         self.session.claimed_id = self.request.get('openid')
+
+      return self.session
 
   def store_session(self):
     """Stores the current session.
@@ -155,22 +158,21 @@ class Handler(webapp.RequestHandler):
       'response': {},
       'openid': '',
       'logins': logins,
-      'request': self.request,
-      'debug': self.request.get('deb'),
     }
     values.update(extra_values)
     cwd = os.path.dirname(__file__)
     path = os.path.join(cwd, 'templates', 'base.html')
-    logging.debug(path)
     self.response.out.write(template.render(path, values, debug=_DEBUG))
 
-  def report_error(self, message):
+  def report_error(self, message, exception=None):
     """Shows an error HTML page.
 
     Args:
       message: string
       A detailed error message.
     """
+    if exception:
+      logging.exception('Error: %s' % message)
     self.render({'error': message})
 
   def show_front_page(self):
@@ -192,25 +194,31 @@ class Handler(webapp.RequestHandler):
     Returns:
       string
     """
+    def format_number(num):
+      if num <= 9:
+        return {1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five',
+                6: 'six', 7: 'seven', 8: 'eight', 9: 'nine'}[num]
+      else:
+        return str(num)
+
     delta = datetime.datetime.now() - timestamp
     minutes = delta.seconds / 60
     hours = minutes / 60
 
     if delta.days > 1:
-      return '%d days ago' % delta.days
+      return '%s days ago' % format_number(delta.days)
     elif delta.days == 1:
       return 'yesterday'
     elif hours > 1:
-      return '%d hours ago' % hours
+      return '%s hours ago' % format_number(hours)
     elif hours == 1:
       return 'an hour ago'
     elif minutes > 25:
       return 'half an hour ago'
     elif minutes > 5:
-      return '%d minutes ago' % minutes
+      return '%s minutes ago' % format_number(minutes)
     else:
       return 'moments ago'
-
 
   def display_name(self, openid_url):
     """Extracts a short, representative part of an OpenID URL for display.
@@ -289,15 +297,20 @@ class LoginHandler(Handler):
     logging.info(self.args_to_dict())
     openid_url = self.request.get('openid')
     if not openid_url:
-      self.show_front_page()
+      self.report_error('Please enter an OpenID URL.')
+      return
 
+    logging.debug('Beginning discovery for OpenID %s' % openid_url)
     try:
-      auth_request = self.get_consumer().begin(openid_url)
+      consumer = self.get_consumer()
+      if not consumer:
+        return
+      auth_request = consumer.begin(openid_url)
     except discover.DiscoveryFailure, e:
-      self.report_error('Error during OpenID provider discovery.')
+      self.report_error('Error during OpenID provider discovery.', e)
       return
     except discover.XRDSError, e:
-      self.report_error('Error parsing XRDS from provider.')
+      self.report_error('Error parsing XRDS from provider.', e)
       return
 
     self.session.claimed_id = auth_request.endpoint.claimed_id
@@ -321,31 +334,43 @@ class LoginHandler(Handler):
     return_to = urlparse.urlunparse(parts)
     realm = urlparse.urlunparse(parts[0:2] + [''] * 4)
 
-#     logging.debug('Redirecting to %s' %
-#                   auth_request.redirectURL(realm, return_to))
-    self.redirect(auth_request.redirectURL(realm, return_to))
+    redirect_url = auth_request.redirectURL(realm, return_to)
+    logging.debug('Redirecting to %s' % redirect_url)
+    self.redirect(redirect_url)
 
 
 class FinishHandler(Handler):
   """Handle a redirect from the provider."""
   def get(self):
     args = self.args_to_dict()
-    response = self.get_consumer().complete(args, self.request.uri)
+    consumer = self.get_consumer()
+    if not consumer:
+      return
+
+    if self.session.login_set.get():
+      self.render()
+      return
+
+    response = consumer.complete(args, self.request.uri)
     assert response.status in Login.status.choices
 
-    self.load_session()
-    logging.info(self.session_args)
-
-    if (response.status == 'success'):
+    if response.status == 'success':
       sreg_data = sreg.SRegResponse.fromSuccessResponse(response).items()
       pape_data = pape.Response.fromSuccessResponse(response)
       self.session.claimed_id = response.endpoint.claimed_id
       self.session.server_url = response.endpoint.server_url
+    elif response.status == 'failure':
+      logging.error(str(response))
 
-    login = Login(status=response.status,
-                  claimed_id=self.session.claimed_id,
-                  server_url=self.session.server_url)
-    login.put()
+    logging.debug('Login status %s for claimed_id %s' %
+                  (response.status, self.session.claimed_id))
+
+    if self.session.store_and_display:
+      login = Login(status=response.status,
+                    claimed_id=self.session.claimed_id,
+                    server_url=self.session.server_url,
+                    session=self.session.key())
+      login.put()
 
     self.render(locals())
 

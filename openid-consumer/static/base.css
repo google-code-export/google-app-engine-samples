@@ -26,20 +26,15 @@ body, input, textarea {
 
 #body {
   clear: both;
-  margin-left: 1em;
-  margin-top: 2em;
+  margin: 1em 0 0 1em;
 }
 
 #header {
-  margin-top: 1.5em;
+  margin: 1.5em 0 0 0;
 }
 
 #title, .top, .bottom {
   background-color: #c3d9ff;
-}
-
-#footer, #title {
-  padding: .3em;
 }
 
 .top {
@@ -50,17 +45,12 @@ body, input, textarea {
 #title {
   font-weight: bold;
   border-top: 1px solid #0000dd;
+  padding: .3em;
 }
 
 #navbar {
   font-size: 80%;
   text-align: right;
-}
-
-#footer {
-  margin-top: 2em;
-  text-align: center;
-  font-size: 80%;
 }
 
 
@@ -117,7 +107,7 @@ img#openid-logo {
   font-style: italic;
 }
 
-span.cancel {
+span.success {
   color: #55aa55;
 }
 
@@ -129,7 +119,7 @@ span.cancel {
  * Forms
  */
 form {
-  margin: 0;
+  margin: 0 0 1em 0;
   padding: 0;
 }
 
@@ -152,10 +142,6 @@ a.button, input[type^="submit"], input[type^="button"] {
 
 a.button:hover, input[type^="submit"]:hover, input[type^="button"]:hover {
   border-color: #9cf #69e #69e #7af;
-}
-
-.form .field {
-  margin-bottom: 0.5em;
 }
 
 /*
@@ -192,7 +178,7 @@ a.button:hover, input[type^="submit"]:hover, input[type^="button"]:hover {
   background-image: url("/static/round_bottom_right.png");
 }
 
-table th {
+table.logins th {
   background-color: #e8eef7;
 }
 
@@ -257,3 +243,6 @@ table.key {
   border-spacing: .3em;
 }
 
+/* * { */
+/*   border: 1px solid green; */
+/* } */

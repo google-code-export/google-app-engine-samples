@@ -23,6 +23,8 @@ HTTPFetcher is an interface defined in the top-level fetchers module in
 For more, see openid/fetchers.py in that library.
 """
 
+import logging
+
 from openid import fetchers
 from google.appengine.api import urlfetch
 
@@ -60,6 +62,24 @@ class UrlfetchFetcher(fetchers.HTTPFetcher):
     if not headers:
       headers = {}
 
-    resp = urlfetch.fetch(url, body, method, headers)
-    return fetchers.HTTPResponse(url, resp.status_code, resp.headers,
-                                 resp.content)
+    # follow up to 10 redirects
+    for i in range(10):
+#       logging.info('Getting %s' % url)
+#       try:
+      resp = urlfetch.fetch(url, body, method, headers)
+#       except:
+#         logging.exception('qwert')
+#       import sys
+#       print >> sys.stderr, 'Got %d %s' % (resp.status_code, resp.headers)
+      if resp.status_code in (301, 302):
+        logging.debug('Following %d redirect to %s' %
+                      (resp.status_code, resp.headers['location']))
+        url = resp.headers['location']
+      else:
+        break
+
+    try:
+      return fetchers.HTTPResponse(url, resp.status_code, resp.headers,
+                                   resp.content)
+    except:
+      logging.exception('qwert')
