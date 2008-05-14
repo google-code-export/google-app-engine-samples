@@ -56,6 +56,8 @@ class UrlfetchFetcher(fetchers.HTTPFetcher):
 
     if body:
       method = urlfetch.POST
+      if 'Content-Type' not in headers:
+        headers['Content-Type'] = 'application/x-www-form-urlencoded'
     else:
       method = urlfetch.GET
 
@@ -72,8 +74,5 @@ class UrlfetchFetcher(fetchers.HTTPFetcher):
       else:
         break
 
-    try:
-      return fetchers.HTTPResponse(url, resp.status_code, resp.headers,
-                                   resp.content)
-    except:
-      logging.exception('qwert')
+    return fetchers.HTTPResponse(url, resp.status_code, resp.headers,
+                                 resp.content)

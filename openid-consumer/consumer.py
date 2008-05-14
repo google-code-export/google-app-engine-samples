@@ -245,7 +245,7 @@ class Handler(webapp.RequestHandler):
 
     username_re = '[\w.+-]+'
 
-    parts = urlparse.urlparse(openid_url)
+    scheme, host, path, params, query, frag = urlparse.urlparse(openid_url)
 
     def sanitize(display_name):
       if '@' in display_name:
@@ -255,17 +255,17 @@ class Handler(webapp.RequestHandler):
 
     # is the username in the params?
     match = re.search('(u|id|user|userid|user_id|profile)=(%s)' % username_re,
-                      parts.path)
+                      path)
     if match:
       return sanitize(match.group(2))
 
     # is the username in the path?
-    path = parts.path.split('/')
+    path = path.split('/')
     if re.match(username_re, path[-1]):
       return sanitize(path[-1])
 
     # use the hostname
-    host = parts.hostname.split('.')
+    host = host.split('.')
     if len(host) == 1:
       return host[0]
 
@@ -336,7 +336,8 @@ class LoginHandler(Handler):
 
     redirect_url = auth_request.redirectURL(realm, return_to)
     logging.debug('Redirecting to %s' % redirect_url)
-    self.redirect(redirect_url)
+    self.response.set_status(302)
+    self.response.headers['Location'] = redirect_url
 
 
 class FinishHandler(Handler):
