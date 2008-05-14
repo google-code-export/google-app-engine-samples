@@ -64,13 +64,7 @@ class UrlfetchFetcher(fetchers.HTTPFetcher):
 
     # follow up to 10 redirects
     for i in range(10):
-#       logging.info('Getting %s' % url)
-#       try:
       resp = urlfetch.fetch(url, body, method, headers)
-#       except:
-#         logging.exception('qwert')
-#       import sys
-#       print >> sys.stderr, 'Got %d %s' % (resp.status_code, resp.headers)
       if resp.status_code in (301, 302):
         logging.debug('Following %d redirect to %s' %
                       (resp.status_code, resp.headers['location']))
