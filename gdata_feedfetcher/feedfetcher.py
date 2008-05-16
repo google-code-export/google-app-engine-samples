@@ -128,7 +128,7 @@ class Fetcher(webapp.RequestHandler):
     
   def GenerateScopeRequestLink(self, scope):
     return self.client.GenerateAuthSubURL(
-        '/?token_scope=%s' % (scope),
+        'http://gdata-feedfetcher.appspot.com/?token_scope=%s' % (scope),
         scope, secure=False, session=True)
 
   def ShowInstructions(self):
