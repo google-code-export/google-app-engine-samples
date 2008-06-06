@@ -29,6 +29,10 @@ import gdata.urlfetch
 gdata.service.http_request_handler = gdata.urlfetch
 
 
+# Change the value of HOST_NAME to the name given to point to your app.
+HOST_NAME = 'gdata-feedfetcher.appspot.com'
+
+
 class StoredToken(db.Model):
   user_email = db.StringProperty(required=True)
   session_token = db.StringProperty(required=True)
@@ -95,8 +99,8 @@ class Fetcher(webapp.RequestHandler):
         '<div id="sidebar"><div id="scopes"><h4>Request a token</h4><ul>')
     self.response.out.write('<li><a href="%s">Google Documents</a></li>' % (
         self.client.GenerateAuthSubURL(
-            'http://gdata-feedfetcher.appspot.com/step3' + 
-                '?token_scope=http://docs.google.com/feeds/', 
+            'http://%s/step4?token_scope=http://docs.google.com/feeds/' % (
+                HOST_NAME), 
             'http://docs.google.com/feeds/', secure=False, session=True)))
     self.response.out.write('</ul></div><br/><div id="tokens">')
 
@@ -107,7 +111,7 @@ class Fetcher(webapp.RequestHandler):
       self.UpgradeAndStoreToken()
 
   def UpgradeAndStoreToken(self):
-    self.client.auth_token = self.token
+    self.client.SetAuthSubToken(self.token)
     self.client.UpgradeToSessionToken()
     if self.current_user:
       # Create a new token object for the data store which associates the
@@ -123,26 +127,27 @@ class Fetcher(webapp.RequestHandler):
           self.current_user.email())
       for token in stored_tokens:
         if self.feed_url.startswith(token.target_url):
-          self.client.auth_token = token.session_token
+          self.client.SetAuthSubToken(token.session_token)
           return
 
   def FetchFeed(self):
     # Attempt to fetch the feed.
-    if not self.client:
-      self.client = gdata.service.GDataService()
     if not self.feed_url:
       self.response.out.write(
           'No feed_url was specified for the app to fetch.<br/>')
-      self.response.out.write('Here\'s an example query which will show the' +
-          ' XML for the feed listing your Google Documents <a ' + 
-          'href="http://gdata-feedfetcher.appspot.com/step4' + 
-          '?feed_url=http://docs.google.com/feeds/documents/private/full">' + 
-          'http://gdata-feedfetcher.appspot.com/step4?' + 
-          'feed_url=http://docs.google.com/feeds/documents/private/full</a>')
+      self.response.out.write('Here\'s an example query which will show the'
+          ' XML for the feed listing your Google Documents <a '
+          'href="http://%s/step4' 
+          '?feed_url=http://docs.google.com/feeds/documents/private/full">'
+          'http://%s/step4' 
+          '?feed_url=http://docs.google.com/feeds/documents/private/full'
+          '</a>' % (HOST_NAME, HOST_NAME))
       return
+    if not self.client:
+      self.client = gdata.service.GDataService()
     try:
-      feed = self.client.Get(self.feed_url, converter=str)
-      self.response.out.write(cgi.escape(feed))
+      response = self.client.Get(self.feed_url, converter=str)
+      self.response.out.write(cgi.escape(response))
     except gdata.service.RequestError, request_error:
       # If fetching fails, then tell the user that they need to login to
       # authorize this app by logging in at the following URL.

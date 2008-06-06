@@ -28,6 +28,10 @@ import gdata.urlfetch
 gdata.service.http_request_handler = gdata.urlfetch
 
 
+# Change the value of HOST_NAME to the name given to point to your app.
+HOST_NAME = 'gdata-feedfetcher.appspot.com'
+
+
 class StoredToken(db.Model):
   user_email = db.StringProperty(required=True)
   session_token = db.StringProperty(required=True)
@@ -80,8 +84,8 @@ class Fetcher(webapp.RequestHandler):
         '<div id="sidebar"><div id="scopes"><h4>Request a token</h4><ul>')
     self.response.out.write('<li><a href="%s">Google Documents</a></li>' % (
         self.client.GenerateAuthSubURL(
-            'http://gdata-feedfetcher.appspot.com/step3' + 
-                '?token_scope=http://docs.google.com/feeds/', 
+            'http://%s/step3?token_scope=http://docs.google.com/feeds/' % (
+                HOST_NAME), 
             'http://docs.google.com/feeds/', secure=False, session=True)))
     self.response.out.write('</ul></div><br/><div id="tokens">')
 
@@ -92,7 +96,7 @@ class Fetcher(webapp.RequestHandler):
       self.UpgradeAndStoreToken()
 
   def UpgradeAndStoreToken(self):
-    self.client.auth_token = self.token
+    self.client.SetAuthSubToken(self.token)
     self.client.UpgradeToSessionToken()
     if self.current_user:
       # Create a new token object for the data store which associates the
