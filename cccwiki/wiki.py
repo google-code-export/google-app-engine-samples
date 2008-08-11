@@ -31,16 +31,17 @@ import re
 import sys
 import urllib
 import urlparse
-import wsgiref.handlers
 
 from google.appengine.api import datastore
 from google.appengine.api import datastore_types
 from google.appengine.api import users
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
+from google.appengine.ext.webapp.util import run_wsgi_app
 
 # Set to true if we want to have our webapp print stack traces, etc
 _DEBUG = True
+
 
 class BaseRequestHandler(webapp.RequestHandler):
   """Supplies a common template generation function.
@@ -52,15 +53,25 @@ class BaseRequestHandler(webapp.RequestHandler):
   def generate(self, template_name, template_values={}):
     values = {
       'request': self.request,
-      'user': users.GetCurrentUser(),
-      'login_url': users.CreateLoginURL(self.request.uri),
-      'logout_url': users.CreateLogoutURL(self.request.uri),
+      'user': users.get_current_user(),
+      'login_url': users.create_login_url(self.request.uri),
+      'logout_url': users.create_logout_url(self.request.uri),
       'application_name': 'Wiki',
     }
     values.update(template_values)
     directory = os.path.dirname(__file__)
     path = os.path.join(directory, os.path.join('templates', template_name))
     self.response.out.write(template.render(path, values, debug=_DEBUG))
+  
+  def head(self, *args):
+    pass
+  
+  def get(self, *args):
+    pass
+    
+  def post(self, *args):
+    pass
+
 
 class WikiPage(BaseRequestHandler):
   """Our one and only request handler.
@@ -73,6 +84,12 @@ class WikiPage(BaseRequestHandler):
   to the datastore.
   """
   def get(self, page_name):
+    """Handle HTTP GET requests throughout the application, used to present
+    the view and edit modes of wiki pages.
+    
+    Args:
+      page_name: The wikified name of the current page.
+    """
     # Load the main page by default
     if not page_name:
       page_name = 'MainPage'
@@ -88,8 +105,8 @@ class WikiPage(BaseRequestHandler):
         mode = 'view'
 
     # User must be logged in to edit
-    if mode == 'edit' and not users.GetCurrentUser():
-      self.redirect(users.CreateLoginURL(self.request.uri))
+    if mode == 'edit' and not users.get_current_user():
+      self.redirect(users.create_login_url(self.request.uri))
       return
 
     # Genertate the appropriate template
@@ -98,11 +115,17 @@ class WikiPage(BaseRequestHandler):
     })
 
   def post(self, page_name):
+    """Handle HTTP POST requests throughout the application, used to handle
+    posting new or edited wiki pages.
+    
+    Args:
+      page_name: The wikified name of the current page.
+    """
     # User must be logged in to edit
-    if not users.GetCurrentUser():
+    if not users.get_current_user():
       # The GET version of this URI is just the view/edit mode, which is a
       # reasonable thing to redirect to
-      self.redirect(users.CreateLoginURL(self.request.uri))
+      self.redirect(users.create_login_url(self.request.uri))
       return
 
     # We need an explicit page name for editing
@@ -137,7 +160,7 @@ class Page(object):
     else:
       # New pages should start out with a simple title to get the user going
       now = datetime.datetime.now()
-      self.content = '<h1>' + cgi.escape(name) + '</h1>'
+      self.content = '<h1>%s</h1>' % (cgi.escape(name),)
       self.user = None
       self.created = now
       self.modified = now
@@ -146,7 +169,7 @@ class Page(object):
     return self.entity
 
   def edit_url(self):
-    return '/' + self.name + '?mode=edit'
+    return '/%s?mode=edit' % (self.name,)
 
   def view_url(self):
     return '/' + self.name
@@ -156,6 +179,9 @@ class Page(object):
 
     We auto-link URLs, link WikiWords, and hide referers on links that
     go outside of the Wiki.
+    
+    Returns:
+      The wikified version of the page contents.
     """
     transforms = [
       AutoLink(),
@@ -179,8 +205,8 @@ class Page(object):
     entity['content'] = datastore_types.Text(self.content)
     entity['modified'] = now
 
-    if users.GetCurrentUser():
-      entity['user'] = users.GetCurrentUser()
+    if users.get_current_user():
+      entity['user'] = users.get_current_user()
     elif entity.has_key('user'):
       del entity['user']
 
@@ -190,9 +216,10 @@ class Page(object):
   def load(name):
     """Loads the page with the given name.
 
-    We always return a Page instance, even if the given name isn't yet in
-    the database. In that case, the Page object will be created when save()
-    is called.
+    Returns:
+      We always return a Page instance, even if the given name isn't yet in
+      the database. In that case, the Page object will be created when save()
+      is called.
     """
     query = datastore.Query('Page')
     query['name ='] = name
@@ -226,7 +253,11 @@ class Transform(object):
   def run(self, content):
     """Runs this transform over the given content.
 
-    We return a new string that is the result of this transform.
+    Args:
+      content: The string data to apply a transformation to.
+
+    Returns:
+      A new string that is the result of this transform.
     """
     parts = []
     offset = 0
@@ -275,14 +306,12 @@ class HideReferers(Transform):
     url = match.group(1)
     scheme, host, path, parameters, query, fragment = urlparse.urlparse(url)
     url = 'http://www.google.com/url?sa=D&amp;q=' + urllib.quote(url)
-    return 'href="' + url + '"'
+    return 'href="%s"' % (url,)
 
 
 def main():
-  application = webapp.WSGIApplication([
-    ('/(.*)', WikiPage),
-  ], debug=_DEBUG)
-  wsgiref.handlers.CGIHandler().run(application)
+  application = webapp.WSGIApplication([('/(.*)', WikiPage)], debug=_DEBUG)
+  run_wsgi_app(application)
 
 
 if __name__ == '__main__':
