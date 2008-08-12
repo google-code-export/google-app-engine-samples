@@ -14,9 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """A collaborative task list web application built on Google App Engine."""
 
+
 __author__ = 'Bret Taylor'
+
 
 import datetime
 import os
@@ -25,17 +28,22 @@ import string
 import sys
 import wsgiref.handlers
 
+
 from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp.util import login_required
+from google.appengine.ext.webapp.util import run_wsgi_app
+
 
 # Set to true if we want to have our webapp print stack traces, etc
 _DEBUG = True
 
+
 # Add our custom Django template filters to the built in filters
 template.register_template_library('templatefilters')
+
 
 class TaskList(db.Model):
   """A TaskList is the entity tasks refer to to form a list.
@@ -52,7 +60,7 @@ class TaskList(db.Model):
   @staticmethod
   def get_current_user_lists():
     """Returns the task lists that the current user has access to."""
-    return TaskList.get_user_lists(users.GetCurrentUser())
+    return TaskList.get_user_lists(users.get_current_user())
 
   @staticmethod
   def get_user_lists(user):
@@ -63,7 +71,7 @@ class TaskList(db.Model):
 
   def current_user_has_access(self):
     """Returns true if the current user has access to this task list."""
-    return self.user_has_access(users.GetCurrentUser())
+    return self.user_has_access(users.get_current_user())
 
   def user_has_access(self, user):
     """Returns true if the given user has access to this task list."""
@@ -77,7 +85,7 @@ class TaskList(db.Model):
 class TaskListMember(db.Model):
   """Represents the many-to-many relationship between TaskLists and Users.
 
-  This is essentially the task list ACL.
+  This is essentially the task list Access Control List (ACL).
   """
   task_list = db.Reference(TaskList, required=True)
   user = db.UserProperty(required=True)
@@ -111,13 +119,13 @@ class BaseRequestHandler(webapp.RequestHandler):
   """
   def generate(self, template_name, template_values={}):
     values = {
-      'request': self.request,
-      'user': users.GetCurrentUser(),
-      'login_url': users.CreateLoginURL(self.request.uri),
-      'logout_url': users.CreateLogoutURL('http://' + self.request.host + '/'),
-      'debug': self.request.get('deb'),
-      'application_name': 'Task Manager',
-    }
+        'request': self.request,
+        'user': users.get_current_user(),
+        'login_url': users.create_login_url(self.request.uri),
+        'logout_url': users.create_logout_url('http://%s/' % (
+            self.request.host,)),
+        'debug': self.request.get('deb'),
+        'application_name': 'Task Manager',}
     values.update(template_values)
     directory = os.path.dirname(__file__)
     path = os.path.join(directory, os.path.join('templates', template_name))
@@ -137,9 +145,8 @@ class InboxPage(BaseRequestHandler):
           non_archived.append(task_list)
       lists = non_archived
     self.generate('index.html', {
-      'lists': lists,
-      'archive': show_archive,
-    })
+        'lists': lists,
+        'archive': show_archive,})
 
 
 class TaskListPage(BaseRequestHandler):
@@ -156,8 +163,7 @@ class TaskListPage(BaseRequestHandler):
   _OUTPUT_TYPES = {
     'default': ['text/html', 'html'],
     'html': ['text/html', 'html'],
-    'atom': ['application/atom+xml', 'xml'],
-  }
+    'atom': ['application/atom+xml', 'xml'],}
 
   def get(self):
     task_list = TaskList.get(self.request.get('id'))
@@ -167,9 +173,8 @@ class TaskListPage(BaseRequestHandler):
 
     # Choose a template based on the output type
     output_name = self.request.get('output')
-    output_name_list = TaskListPage._OUTPUT_TYPES.keys()
-    if output_name not in output_name_list:
-      output_name = output_name_list[0]
+    if output_name not in TaskListPage._OUTPUT_TYPES:
+      output_name = 'default'
     output_type = TaskListPage._OUTPUT_TYPES[output_name]
 
     # Validate this user has access to this task list. If not, they can
@@ -180,9 +185,9 @@ class TaskListPage(BaseRequestHandler):
           output_name = 'html'
           output_type = TaskListPage._OUTPUT_TYPES[output_name]
       else:
-        user = users.GetCurrentUser()
+        user = users.get_current_user()
         if not user:
-          self.redirect(users.CreateLoginURL(self.request.uri))
+          self.redirect(users.create_login_url(self.request.uri))
         else:
           self.error(403)
         return
@@ -201,18 +206,17 @@ class TaskListPage(BaseRequestHandler):
       updated = None
 
     self.response.headers['Content-Type'] = output_type[0]
-    self.generate('tasklist_' + output_name + '.' + output_type[1], {
-      'task_list': task_list,
-      'tasks': tasks,
-      'archive': show_archive,
-      'updated': updated,
-    })
+    self.generate('tasklist_%s.%s' % (output_name, output_type[1]), {
+        'task_list': task_list,
+        'tasks': tasks,
+        'archive': show_archive,
+        'updated': updated,})
 
 
 class CreateTaskListAction(BaseRequestHandler):
   """Creates a new task list for the current user."""
   def post(self):
-    user = users.GetCurrentUser()
+    user = users.get_current_user()
     name = self.request.get('name')
     if not user or not name:
       self.error(403)
@@ -400,7 +404,7 @@ class SetTaskPositionsAction(BaseRequestHandler):
   based on that order (e.g., 1 through N for N tasks).
   """
   def post(self):
-    keys = self.request.get("tasks").split(",")
+    keys = self.request.get('tasks').split(',')
     if not keys:
       self.error(403)
       return
@@ -429,18 +433,17 @@ class PublishTaskListAction(BaseRequestHandler):
 
 def main():
   application = webapp.WSGIApplication([
-    ('/', InboxPage),
-    ('/list', TaskListPage),
-    ('/edittask.do', EditTaskAction),
-    ('/createtasklist.do', CreateTaskListAction),
-    ('/addmember.do', AddMemberAction),
-    ('/inboxaction.do', InboxAction),
-    ('/tasklist.do', TaskListAction),
-    ('/publishtasklist.do', PublishTaskListAction),
-    ('/settaskcompleted.do', SetTaskCompletedAction),
-    ('/settaskpositions.do', SetTaskPositionsAction),
-  ], debug=_DEBUG)
-  wsgiref.handlers.CGIHandler().run(application)
+      ('/', InboxPage),
+      ('/list', TaskListPage),
+      ('/edittask.do', EditTaskAction),
+      ('/createtasklist.do', CreateTaskListAction),
+      ('/addmember.do', AddMemberAction),
+      ('/inboxaction.do', InboxAction),
+      ('/tasklist.do', TaskListAction),
+      ('/publishtasklist.do', PublishTaskListAction),
+      ('/settaskcompleted.do', SetTaskCompletedAction),
+      ('/settaskpositions.do', SetTaskPositionsAction)], debug=_DEBUG)
+  run_wsgi_app(application)
 
 
 if __name__ == '__main__':
