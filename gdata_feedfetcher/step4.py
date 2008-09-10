@@ -23,10 +23,7 @@ from google.appengine.ext import webapp
 from google.appengine.api import users
 from google.appengine.ext import db
 import gdata.service
-import gdata.urlfetch
-
-
-gdata.service.http_request_handler = gdata.urlfetch
+import gdata.alt.appengine
 
 
 # Change the value of HOST_NAME to the name given to point to your app.
@@ -106,6 +103,7 @@ class Fetcher(webapp.RequestHandler):
 
   def ManageAuth(self):
     self.client = gdata.service.GDataService()
+    gdata.alt.appengine.run_on_appengine(self.client)
     if self.token:
       # Upgrade to a session token and store the session token.
       self.UpgradeAndStoreToken()
@@ -145,6 +143,7 @@ class Fetcher(webapp.RequestHandler):
       return
     if not self.client:
       self.client = gdata.service.GDataService()
+      gdata.alt.appengine.run_on_appengine(self.client)
     try:
       response = self.client.Get(self.feed_url, converter=str)
       self.response.out.write(cgi.escape(response))

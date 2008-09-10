@@ -21,12 +21,12 @@ import urllib
 from google.appengine.ext import webapp
 from google.appengine.api import users
 import gdata.service
-import gdata.urlfetch
+import gdata.alt.appengine
 
-gdata.service.http_request_handler = gdata.urlfetch
 
 # Change the value of HOST_NAME to the name given to point to your app.
 HOST_NAME = 'gdata-feedfetcher.appspot.com'
+
 
 class Fetcher(webapp.RequestHandler):
 
@@ -81,6 +81,7 @@ class Fetcher(webapp.RequestHandler):
 
   def ManageAuth(self):
     self.client = gdata.service.GDataService()
+    gdata.alt.appengine.run_on_appengine(self.client)
     if self.token and self.current_user:
       # Upgrade to a session token and store the session token.
       self.UpgradeToken()

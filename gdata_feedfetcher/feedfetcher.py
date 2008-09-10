@@ -24,11 +24,11 @@ from google.appengine.ext import db
 from google.appengine.api import urlfetch
 import urllib # Used to unescape URL parameters.
 import gdata.service
-import gdata.urlfetch
+import gdata.alt.appengine
 import atom
 
 
-gdata.service.http_request_handler = gdata.urlfetch
+HOST_NAME = 'gdata-feedfetcher.appspot.com'
 
 
 class StoredToken(db.Model):
@@ -128,7 +128,7 @@ class Fetcher(webapp.RequestHandler):
     
   def GenerateScopeRequestLink(self, scope):
     return self.client.GenerateAuthSubURL(
-        'http://gdata-feedfetcher.appspot.com/?token_scope=%s' % (scope),
+        'http://%s/?token_scope=%s' % (HOST_NAME, scope),
         scope, secure=False, session=True)
 
   def ShowInstructions(self):
@@ -191,6 +191,7 @@ class Fetcher(webapp.RequestHandler):
 
   def ManageAuth(self):
     self.client = gdata.service.GDataService()
+    gdata.alt.appengine.run_on_appengine(self.client)
     if self.token and self.current_user:
       # Upgrade to a session token and store the session token in the data
       # store.
@@ -198,7 +199,7 @@ class Fetcher(webapp.RequestHandler):
     elif self.token:
       # Use the token to make the request, but do not store it sine there is
       # no user to associate with the session token.
-      self.client.auth_token = self.token
+      self.client.SetAuthSubToken(self.token)
     elif self.current_user:
       # Try to lookup the token for this user and this feed_url, and fetch
       # using a shared session token.
@@ -210,7 +211,9 @@ class Fetcher(webapp.RequestHandler):
   def FetchFeed(self):
     # Attempt to fetch the feed.
     if not self.client:
+      self.response.out.write('Created a client')
       self.client = gdata.service.GDataService()
+      gdata.alt.appengine.run_on_appengine(self.client)
     try:
       if self.show_xml:
         response = self.client.Get(self.feed_url, converter=str)
@@ -241,18 +244,22 @@ class Fetcher(webapp.RequestHandler):
                 str(request_error[0])))
 
   def RenderFeed(self, feed):
-    self.response.out.write('<h2>Feed Title: %s</h2>' % feed.title.text)
+    self.response.out.write('<h2>Feed Title: %s</h2>' % (
+        feed.title.text.decode('UTF-8')))
     for link in feed.link:
       self.RenderLink(link)
     for entry in feed.entry:
       self.RenderEntry(entry)
 
   def RenderEntry(self, entry):
-    self.response.out.write('<h3>Entry Title: %s</h3>' % entry.title.text)
+    self.response.out.write('<h3>Entry Title: %s</h3>' % (
+        entry.title.text.decode('UTF-8')))
     if entry.content and entry.content.text:
-      self.response.out.write('<p>Content: %s</p>' % entry.content.text)
+      self.response.out.write('<p>Content: %s</p>' % (
+          entry.content.text.decode('UTF-8')))
     elif entry.summary and entry.summary.text:
-      self.response.out.write('<p>Summary: %s</p>' % entry.summary.text)
+      self.response.out.write('<p>Summary: %s</p>' % (
+          entry.summary.text.decode('UTF-8')))
     for link in entry.link:
       self.RenderLink(link)
 
@@ -270,16 +277,18 @@ class Fetcher(webapp.RequestHandler):
               link.type))
     
   def UpgradeAndStoreToken(self):
-    self.client.auth_token = self.token
+    self.client.SetAuthSubToken(self.token)
     self.client.UpgradeToSessionToken()
     # Create a new token object for the data store which associates the
     # session token with the requested URL and the current user.
     if self.token_scope:
       new_token = StoredToken(user_email=self.current_user.email(),
-          session_token=self.client.auth_token, target_url=self.token_scope)
+          session_token=self.client.GetAuthSubToken(), 
+          target_url=self.token_scope)
     else:
       new_token = StoredToken(user_email=self.current_user.email(), 
-          session_token=self.client.auth_token, target_url=self.feed_url)
+          session_token=self.client.GetAuthSubToken(), 
+          target_url=self.feed_url)
     new_token.put()
 
   def LookupToken(self):
@@ -288,7 +297,7 @@ class Fetcher(webapp.RequestHandler):
           self.current_user.email())
       for token in stored_tokens:
         if self.feed_url.startswith(token.target_url):
-          self.client.auth_token = token.session_token
+          self.client.SetAuthSubToken(token.session_token)
           return
 
   def DisplayAuthorizedUrls(self):
