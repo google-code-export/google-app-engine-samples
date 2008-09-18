@@ -111,9 +111,7 @@ shell.onPromptKeyPress = function(event) {
   }
 
   // should we submit?
-  var ctrlEnter = (document.getElementById('submit_key').value == 'ctrl-enter');
-  if (event.keyCode == 13 /* enter */ && !event.altKey && !event.shiftKey &&
-      event.ctrlKey == ctrlEnter) {
+  if (event.keyCode == 13 /* enter */ && !event.altKey && !event.shiftKey) {
     return this.runStatement();
   }
 };

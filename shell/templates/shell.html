@@ -15,6 +15,10 @@ p {
   margin: 0.5em;
 }
 
+a img {
+  border: none;
+}
+
 .prompt, #output {
   width: 45em;
   border: 1px solid silver;
@@ -76,7 +80,7 @@ p {
 
 <p> Interactive server-side Python shell for
 <a href="http://code.google.com/appengine/">Google App Engine</a>.
-(<a href="http://code.google.com/p/google-app-engine-samples/">source</a>)
+(<a href="http://code.google.com/p/google-app-engine-samples/downloads/list">source</a>)
 </p>
 
 <textarea id="output" rows="22" readonly="readonly">
@@ -105,12 +109,10 @@ Python {{ python_version }}
 {% else %}
   <a href="{{ login_url }}">log in</a>
 {% endif %}
- | Ctrl-Up/Down for history |
-<select id="submit_key">
-  <option value="enter">Enter</option>
-  <option value="ctrl-enter" selected="selected">Ctrl-Enter</option>
-</select>
-<label for="submit_key">submits</label>
+ | Ctrl-Up for history | Shift-Enter for newline
+ | <a href="http://code.google.com/appengine/">
+      <img src="/static/appengine_button_noborder.gif"
+           style="vertical-align: middle" /></a>
 </p>
 
 <script type="text/javascript">
