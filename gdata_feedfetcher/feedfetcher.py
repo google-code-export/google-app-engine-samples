@@ -25,27 +25,15 @@ from google.appengine.api import urlfetch
 import urllib # Used to unescape URL parameters.
 import gdata.service
 import gdata.alt.appengine
+import gdata.auth
 import atom
-
-
-HOST_NAME = 'gdata-feedfetcher.appspot.com'
-
-
-class StoredToken(db.Model):
-  user_email = db.StringProperty(required=True)
-  session_token = db.StringProperty(required=True)
-  target_url = db.StringProperty(required=True)
+import atom.http_interface
+import atom.token_store
+import atom.url
+import settings
 
 
 class Fetcher(webapp.RequestHandler):
-
-  def __init__(self):
-    self.current_user = None
-    self.feed_url = None
-    self.token = None
-    self.token_scope = None
-    self.client = None
-    self.show_xml = False
 
   def get(self):
     self.response.headers['Content-Type'] = 'text/html'
@@ -58,77 +46,89 @@ class Fetcher(webapp.RequestHandler):
          </head><body>""")
        
     self.response.out.write("""<div id="nav"><a href="/">Home</a>""")
-    self.current_user = users.GetCurrentUser()
-    if self.current_user:
+    if users.get_current_user():
       self.response.out.write('<a href="%s">Sign Out</a>' % (
-          users.CreateLogoutURL(self.request.uri)))
+          users.create_logout_url('http://%s/' % settings.HOST_NAME)))
     else:
       self.response.out.write('<a href="%s">Sign In</a>' % (
-          users.CreateLoginURL(self.request.uri)))
+          users.create_login_url('http://%s/' % settings.HOST_NAME)))
     self.response.out.write('</div>')
 
-    for param in self.request.query.split('&'):
-      if param.startswith('token_scope'):
-        self.token_scope = urllib.unquote_plus(param.split('=')[1])
-      elif param.startswith('token'):
-        self.token = param.split('=')[1]
-      elif param.startswith('feed_url'):
-        self.feed_url = urllib.unquote_plus(param.split('=')[1])
-      elif param.startswith('erase_tokens'):
-        self.EraseStoredTokens()
-      elif param.startswith('xml'):
-        self.show_xml = True
+    # Initialize a client to talk to Google Data API services.
+    client = gdata.service.GDataService()
+    gdata.alt.appengine.run_on_appengine(client)
 
-    if self.show_xml:
+    session_token = None
+    # Find the AuthSub token and upgrade it to a session token.
+    auth_token = gdata.auth.extract_auth_sub_token_from_url(self.request.uri)
+    if auth_token:
+      # Upgrade the single-use AuthSub token to a multi-use session token.
+      session_token = client.upgrade_to_session_token(auth_token)
+    if session_token and users.get_current_user():
+      # If there is a current user, store the token in the datastore and
+      # associate it with the current user. Since we told the client to
+      # run_on_appengine, the add_token call will automatically store the
+      # session token if there is a current_user.
+      client.token_store.add_token(session_token)
+    elif session_token:
+      # Since there is no current user, we will put the session token
+      # in a property of the client. We will not store the token in the
+      # datastore, since we wouldn't know which user it belongs to.
+      # Since a new client object is created with each get call, we don't
+      # need to worry about the anonymous token being used by other users.
+      client.current_token = session_token
+
+    # Get the URL for the desired feed and get the display option.
+    feed_url = self.request.get('feed_url')
+    erase_tokens = self.request.get('erase_tokens')
+    if erase_tokens:
+      self.EraseStoredTokens()
+    show_xml = self.request.get('xml')
+
+    if show_xml:
       checked_string = 'checked'
     else:
       checked_string = ''
       
     self.response.out.write("""<div id="wrap"><div id="header">
-         <h1>Google Data Feed Fetcher</h1>
-         <form action="/" method="get">
-         <label id="feed_url_label" for="feed_url">Target URL:</label> <input type="text" size="60" name="feed_url" id="feed_url" value="%s">
-         </input><input type="submit" value="Fetch Atom"></input>
-         <label for="xml">Show XML:</label><input type="checkbox" id="xml" name="xml" value="true" %s>
-         </input>""" % ((self.feed_url or ''), checked_string))
-    self.response.out.write('</form></div>')
-    
-
-    # If we received a token for a specific feed_url and not a more general
-    # scope, then use the exact feed_url in this request as the scope for the
-    # token.
-    if self.token and self.feed_url and not self.token_scope:
-      self.token_scope = self.feed_url 
-
-    self.ManageAuth()
+          <h1>Google Data Feed Fetcher</h1>
+          <form action="/" method="get">
+          <label id="feed_url_label" for="feed_url">Target URL:</label>
+          <input type="text" size="60" name="feed_url" id="feed_url" 
+              value="%s"></input>
+          <input type="submit" value="Fetch Atom"></input>
+          <label for="xml">Show XML:</label>
+          <input type="checkbox" id="xml" name="xml" value="true" %s></input>
+        </form></div>""" % ((feed_url or ''), checked_string))
 
     self.response.out.write('<div id="main">')
-    if not self.feed_url:
+    if not feed_url:
       self.ShowInstructions()
     else:
-      self.FetchFeed()
+      self.FetchFeed(client, feed_url, show_xml)
     self.response.out.write('</div>')
 
-    if self.current_user:
+    if users.get_current_user():
       self.response.out.write("""<div id="sidebar"><div id="scopes">
           <h4>Request a token for some common scopes</h4><ul>
           <li><a href="%s">Blogger</a></li>
           <li><a href="%s">Calendar</a></li>
           <li><a href="%s">Google Documents</a></li>
           </ul></div><div id="tokens">""" % (
-              self.GenerateScopeRequestLink('http://www.blogger.com/feeds/'),
-              self.GenerateScopeRequestLink(
+              self.GenerateScopeRequestLink(client, 
+                  'http://www.blogger.com/feeds/'),
+              self.GenerateScopeRequestLink(client, 
                   'http://www.google.com/calendar/feeds'),
-              self.GenerateScopeRequestLink(
+              self.GenerateScopeRequestLink(client, 
                   'http://docs.google.com/feeds/')))
 
       self.DisplayAuthorizedUrls()
       self.response.out.write('</div>')
     self.response.out.write('</div></div></body></html>')
     
-  def GenerateScopeRequestLink(self, scope):
-    return self.client.GenerateAuthSubURL(
-        'http://%s/?token_scope=%s' % (HOST_NAME, scope),
+  def GenerateScopeRequestLink(self, client, scope):
+    return client.GenerateAuthSubURL('http://%s/' % (
+            settings.HOST_NAME,),
         scope, secure=False, session=True)
 
   def ShowInstructions(self):
@@ -147,22 +147,22 @@ class Fetcher(webapp.RequestHandler):
 
         <h4>Sample Feed URLs</h4>
         <h5>Publicly viewable feeds</h5>
-        <ul><li><a href="/?feed_url=%s"
+        <ul><li><a href="%s"
         >Recent posts in the Google App Engine blog</a></li>
-        <li><a href="/?feed_url=%s"
+        <li><a href="%s"
         >Recent posts in the Google Data APIs blog</a></li>
-        <li><a href="/?feed_url=%s"
+        <li><a href="%s"
         >See events on the Google Developer Events calendar</a></li></ul>
         <h5>Feeds which require authorization</h5>
-        <ul><li><a href="/?feed_url=%s"
+        <ul><li><a href="%s"
         >List your Google Documents</a></li>
-        <li><a href="/?feed_url=%s"
+        <li><a href="%s"
         >List the Google Calendars that you own</a></li>
-        <li><a href="/?feed_url=%s"
+        <li><a href="%s"
         >List your Google Calendars</a></li>
-        <li><a href="/?feed_url=%s"
+        <li><a href="%s"
         >List your blogs on Blogger</a></li>
-        <!--<li><a href="/?feed_url=%s"
+        <!--<li><a href="%s"
         >List your Gmail Contacts</a></li>--></ul>
         
         <p>To learn more about how this sample works, read the article on
@@ -180,52 +180,43 @@ class Fetcher(webapp.RequestHandler):
         <p>This app uses the <a 
         href="http://code.google.com/p/gdata-python-client/"
         >gdata-python-client</a> library.</p>
-    """ % ('http://www.blogger.com/feeds/8501956666581132164/posts/default',
-        'http://googledataapis.blogspot.com/feeds/posts/default',
-        urllib.quote_plus('http://www.google.com/calendar/feeds/developer-calendar@google.com/public/basic'),
-        'http://docs.google.com/feeds/documents/private/full', 
-        'http://www.google.com/calendar/feeds/default/owncalendars/full',
-        'http://www.google.com/calendar/feeds/default/allcalendars/full',
-        'http://www.blogger.com/feeds/default/blogs',
-        'http://www.google.com/m8/feeds/contacts/default/base'))
+    """ % (
+        self.GenerateFeedRequestLink(
+            'http://www.blogger.com/feeds/8501956666581132164/posts/default'),
+        self.GenerateFeedRequestLink(
+            'http://googledataapis.blogspot.com/feeds/posts/default'),
+        self.GenerateFeedRequestLink(
+            'http://www.google.com/calendar/feeds/developer-calendar@google.com/public/basic'),
+        self.GenerateFeedRequestLink(
+            'http://docs.google.com/feeds/documents/private/full'),
+        self.GenerateFeedRequestLink(
+            'http://www.google.com/calendar/feeds/default/owncalendars/full'),
+        self.GenerateFeedRequestLink(
+            'http://www.google.com/calendar/feeds/default/allcalendars/full'),
+        self.GenerateFeedRequestLink(
+            'http://www.blogger.com/feeds/default/blogs'),
+        self.GenerateFeedRequestLink(
+            'http://www.google.com/m8/feeds/contacts/default/base')))
 
-  def ManageAuth(self):
-    self.client = gdata.service.GDataService()
-    gdata.alt.appengine.run_on_appengine(self.client)
-    if self.token and self.current_user:
-      # Upgrade to a session token and store the session token in the data
-      # store.
-      self.UpgradeAndStoreToken()
-    elif self.token:
-      # Use the token to make the request, but do not store it sine there is
-      # no user to associate with the session token.
-      self.client.SetAuthSubToken(self.token)
-    elif self.current_user:
-      # Try to lookup the token for this user and this feed_url, and fetch
-      # using a shared session token.
-      self.LookupToken()
-    else:
-      # Try to fetch the feed without using an authorization header.
-      pass
-      
-  def FetchFeed(self):
+  def GenerateFeedRequestLink(self, feed_url):
+    return atom.url.Url('http', settings.HOST_NAME, path='/', 
+        params={'feed_url':feed_url}).to_string()
+
+  def FetchFeed(self, client, feed_url, show_xml=False):
     # Attempt to fetch the feed.
-    if not self.client:
-      self.response.out.write('Created a client')
-      self.client = gdata.service.GDataService()
-      gdata.alt.appengine.run_on_appengine(self.client)
     try:
-      if self.show_xml:
-        response = self.client.Get(self.feed_url, converter=str)
+      if show_xml:
+        response = client.Get(feed_url, converter=str)
+        response = response.decode('UTF-8')
         self.response.out.write(cgi.escape(response))
       else:
-        response = self.client.Get(self.feed_url)
+        response = client.Get(feed_url)
         if isinstance(response, atom.Feed):
           self.RenderFeed(response)
         elif isinstance(response, atom.Entry):
           self.RenderEntry(response)
         else:
-          self.response.out.write(cgi.escape(response))
+          self.response.out.write(cgi.escape(response.read()))
     except gdata.service.RequestError, request_error:
       # If fetching fails, then tell the user that they need to login to
       # authorize this app by logging in at the following URL.
@@ -233,7 +224,7 @@ class Fetcher(webapp.RequestHandler):
         # Get the URL of the current page so that our AuthSub request will
         # send the user back to here.
         next = self.request.uri
-        auth_sub_url = self.client.GenerateAuthSubURL(next, self.feed_url,
+        auth_sub_url = client.GenerateAuthSubURL(next, feed_url,
             secure=False, session=True)
         self.response.out.write('<a href="%s">' % (auth_sub_url))
         self.response.out.write(
@@ -276,53 +267,19 @@ class Fetcher(webapp.RequestHandler):
           'Link: <a href="%s">%s link (%s)</a><br/>' % (link.href, link.rel,
               link.type))
     
-  def UpgradeAndStoreToken(self):
-    self.client.SetAuthSubToken(self.token)
-    self.client.UpgradeToSessionToken()
-    # Create a new token object for the data store which associates the
-    # session token with the requested URL and the current user.
-    if self.token_scope:
-      new_token = StoredToken(user_email=self.current_user.email(),
-          session_token=self.client.GetAuthSubToken(), 
-          target_url=self.token_scope)
-    else:
-      new_token = StoredToken(user_email=self.current_user.email(), 
-          session_token=self.client.GetAuthSubToken(), 
-          target_url=self.feed_url)
-    new_token.put()
-
-  def LookupToken(self):
-    if self.feed_url:
-      stored_tokens = StoredToken.gql('WHERE user_email = :1', 
-          self.current_user.email())
-      for token in stored_tokens:
-        if self.feed_url.startswith(token.target_url):
-          self.client.SetAuthSubToken(token.session_token)
-          return
-
   def DisplayAuthorizedUrls(self):
     self.response.out.write('<h4>Stored Authorization Tokens</h4><ul>')
-    delete_stored_tokens_url = self.request.uri
-    if delete_stored_tokens_url.find('erase_tokens=true') < 0:
-      if delete_stored_tokens_url.find('?') > -1:
-        delete_stored_tokens_url += '&erase_tokens=true'
-      else:
-        delete_stored_tokens_url += '?erase_tokens=true'
-    stored_tokens = StoredToken.gql('WHERE user_email = :1', 
-        self.current_user.email())
-    for token in stored_tokens:
-        self.response.out.write('<li><a href="/?feed_url=%s">%s*</a></li>' % (
-            urllib.quote_plus(token.target_url), token.target_url))
+    tokens = gdata.alt.appengine.load_auth_tokens()
+    for token_scope in tokens:
+      self.response.out.write('<li><a href="/?feed_url=%s">%s*</a></li>' % (
+          urllib.quote_plus(str(token_scope)), str(token_scope)))
     self.response.out.write(
         '</ul>To erase your stored tokens, <a href="%s">click here</a>' % (
-            delete_stored_tokens_url))
+            atom.url.Url('http', settings.HOST_NAME, path='/', 
+                params={'erase_tokens':'true'}).to_string()))
 
   def EraseStoredTokens(self):
-    if self.current_user:
-      stored_tokens = StoredToken.gql('WHERE user_email = :1',
-          self.current_user.email())
-      for token in stored_tokens:
-        token.delete()
+    gdata.alt.appengine.save_auth_tokens({})
 
 
 class Acker(webapp.RequestHandler):
