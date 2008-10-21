@@ -292,7 +292,9 @@ class Acker(webapp.RequestHandler):
 
 
 def main():
-  application = webapp.WSGIApplication([('/', Fetcher), ('/google72db3d6838b4c438.html', Acker)], debug=True)
+  application = webapp.WSGIApplication([('/', Fetcher), 
+      ('/google72db3d6838b4c438.html', Acker)], 
+      debug=True)
   wsgiref.handlers.CGIHandler().run(application)
 
 

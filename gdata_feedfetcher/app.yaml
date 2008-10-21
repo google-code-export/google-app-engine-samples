@@ -16,8 +16,5 @@ handlers:
 - url: /step3.*
   script: step3.py
 
-- url: /step4.*
-  script: step4.py
-
 - url: /.*
   script: feedfetcher.py
