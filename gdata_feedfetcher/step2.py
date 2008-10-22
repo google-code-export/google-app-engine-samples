@@ -31,7 +31,7 @@ class Fetcher(webapp.RequestHandler):
     # Write our pages title
     self.response.out.write("""<html><head><title>
         Google Data Feed Fetcher: read Google Data API Atom feeds</title>""")
-    self.response.out.write('<body>')
+    self.response.out.write('</head><body>')
     # Allow the user to sign in or sign out
     next_url = atom.url.Url('http', settings.HOST_NAME, path='/step2')
     if users.get_current_user():

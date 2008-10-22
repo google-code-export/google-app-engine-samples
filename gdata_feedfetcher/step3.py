@@ -17,7 +17,6 @@ __author__ = 'api.jscudder (Jeff Scudder)'
 
 
 import wsgiref.handlers
-import urllib
 import cgi
 from google.appengine.ext import webapp
 from google.appengine.api import users
@@ -33,7 +32,7 @@ class Fetcher(webapp.RequestHandler):
     # Write our pages title
     self.response.out.write("""<html><head><title>
         Google Data Feed Fetcher: read Google Data API Atom feeds</title>""")
-    self.response.out.write('<body>')
+    self.response.out.write('</head><body>')
     next_url = atom.url.Url('http', settings.HOST_NAME, path='/step3')
     # Allow the user to sign in or sign out
     if users.get_current_user():
@@ -47,11 +46,7 @@ class Fetcher(webapp.RequestHandler):
     client = gdata.service.GDataService()
     gdata.alt.appengine.run_on_appengine(client)
 
-    feed_url = None
-    for param in self.request.query.split('&'):
-      # Find out what the target URL is that we should attempt to fetch.
-      if param.startswith('feed_url'):
-        feed_url = urllib.unquote_plus(param.split('=')[1])
+    feed_url = self.request.get('feed_url')
 
     session_token = None
     # Find the AuthSub token and upgrade it to a session token.
