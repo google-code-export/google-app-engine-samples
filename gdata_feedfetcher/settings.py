@@ -16,5 +16,11 @@
 __author__ = 'api.jscudder (Jeff Scudder)'
 
 
-# Change the value of HOST_NAME to the name given to point to your app.
-HOST_NAME = 'gdata-feedfetcher.appspot.com'
+import os
+
+
+port = os.environ['SERVER_PORT']
+if port and port != '80':
+  HOST_NAME = '%s:%s' % (os.environ['SERVER_NAME'], port)
+else:
+  HOST_NAME = os.environ['SERVER_NAME']
