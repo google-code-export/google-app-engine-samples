@@ -80,7 +80,7 @@ class MainRequestHandler(BaseRequestHandler):
 class ChatsRequestHandler(BaseRequestHandler):
   def renderChats(self):
     greetings_query = Greeting.all().order('-date')
-    greetings = greetings_query.fetch(1000)
+    greetings = greetings_query.fetch(50)
     greetings.reverse()
     
     template_values = {
@@ -89,12 +89,10 @@ class ChatsRequestHandler(BaseRequestHandler):
     return self.generate('chats.html', template_values)
       
   def getChats(self, useCache=True):
-    greetings = self.renderChats()
-    return greetings
-    """
+
     if useCache is False:
       greetings = self.renderChats()
-      if not memcache.set("chat", greetings, 2):
+      if not memcache.set("chats", greetings):
         logging.error("Memcache set failed:")
       return greetings
       
@@ -103,10 +101,9 @@ class ChatsRequestHandler(BaseRequestHandler):
       return greetings
     else:
       greetings = self.renderChats()
-      if not memcache.set("chat", greetings, 2):
+      if not memcache.set("chats", greetings):
         logging.error("Memcache set failed:")
       return greetings
-   """
 
     
   def get(self):
@@ -120,7 +117,7 @@ class ChatsRequestHandler(BaseRequestHandler):
 
     greeting.content = self.request.get('content')
     greeting.put()
-    
+
     self.getChats(False)
 
     

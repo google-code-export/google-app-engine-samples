@@ -38,10 +38,8 @@ function downloadUrl(url, type, data, callback) {
      } catch (e) {
        // Usually indicates request timed out in FF.
      }
-     if (status == 200) {
-       callback(request.responseText);
-       request.onreadystatechange = function() {};
-     }
+     callback(request.responseText, request.status);
+     request.onreadystatechange = function() {};
    }
  }
  request.open(type, url, true);

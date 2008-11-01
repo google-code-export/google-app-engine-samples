@@ -3,6 +3,7 @@
     <link type="text/css" rel="stylesheet" href="/css/main.css" />
     <script src="/js/util.js"></script>
     <script>
+ 
     function updateChat() {
 	    downloadUrl(getRandomUrl("/getchats"), "GET", null, onChatsReturned);
 	}
@@ -13,13 +14,15 @@
 		document.getElementById("chattext").value = "";
 	}
 
-	function onChatsReturned(responseText) {
+	function onChatsReturned(responseText, status) {
+		if (status == 200) {
 		document.getElementById("chats").innerHTML = responseText;
 		scrollToBottom();
+	    } 
+	    window.setTimeout("updateChat()", 10000);
 	}
 
 	function setup() {
-		window.setInterval("updateChat()", 5000);
 		updateChat();
 	}
 	
