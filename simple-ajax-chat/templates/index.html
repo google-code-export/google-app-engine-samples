@@ -1,35 +1,41 @@
 <html>
   <head>
+    <title>Simple AJAX Chat</title>
     <link type="text/css" rel="stylesheet" href="/css/main.css" />
     <script src="/js/util.js"></script>
+    <script src="/js/highlightuser.js"></script>
     <script>
- 
+    var CURRENT_USER = '{{ user.nickname }}';
+    var CHATS_DIV = null;
+    
     function updateChat() {
 	    downloadUrl(getRandomUrl("/getchats"), "GET", null, onChatsReturned);
 	}
 	
 	function sendChat(form) {
-		
-		downloadUrl(getRandomUrl("/getchats"), "POST", "content=" + encodeURI(document.getElementById("chattext").value), onChatsReturned);
+		downloadUrl(getRandomUrl("/getchats"), "POST", "content=" + encodeURIComponent(document.getElementById("chattext").value), onChatsReturned);
 		document.getElementById("chattext").value = "";
 	}
 
 	function onChatsReturned(responseText, status) {
 		if (status == 200) {
-		document.getElementById("chats").innerHTML = responseText;
-		scrollToBottom();
+		  CHATS_DIV.innerHTML = responseText;
+		  scrollToBottom();
+		  highlightUser(CURRENT_USER, CHATS_DIV);
+		  makeLinks(CHATS_DIV);
 	    } 
 	    window.setTimeout("updateChat()", 10000);
 	}
 
 	function setup() {
 		updateChat();
+		CHATS_DIV = document.getElementById("chats");
 	}
 	
 	function scrollToBottom() {
-	  var chatDiv = document.getElementById("chats");
-	  chatDiv.scrollTop = chatDiv.scrollHeight;
+	  CHATS_DIV.scrollTop = CHATS_DIV.scrollHeight;
 	}
+	
 	function getRandomUrl(url) {
   		var randUnrounded=Math.random()*999999999;
   		var randNumber=Math.floor(randUnrounded);
@@ -48,13 +54,14 @@
     	<div align="right"><a href="{{log_in_out_url}}">Log in</a></div>
     {% endif %}
    
-    <div id="chats" style="padding:10px;background-color:white;width:99%;height:85%; overflow:auto;">
+    <div id="chats" style="padding:10px;background-color:white;width:97%;height:80%; overflow:auto;">
 	</div>
 	<br/>
 	<div>
     <form action="javascript:sendChat();">
       <div><input name="content" type="text" id="chattext" size="100"></input>
-      <input type="submit" value="Chat"></div>
+      <input type="submit" value="Chat">
+      <input type="button" value="Force Refresh" onclick="updateChat()"></div>
     </form>
     </div>
   </body>

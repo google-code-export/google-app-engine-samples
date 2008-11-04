@@ -2,6 +2,7 @@ import cgi
 import os
 import urllib
 import logging
+import pickle
 
 from google.appengine.api import users
 from google.appengine.ext import webapp
@@ -59,7 +60,7 @@ class BaseRequestHandler(webapp.RequestHandler):
     path = os.path.join(directory, 'templates', template_name)
 
     # Respond to the request by rendering the template
-    self.response.out.write(template.render(path, values, debug=_DEBUG))
+    return template.render(path, values, debug=_DEBUG)
     
 class MainRequestHandler(BaseRequestHandler):
   def get(self):
@@ -75,50 +76,48 @@ class MainRequestHandler(BaseRequestHandler):
       'url_linktext': url_linktext,
       }
 
-    self.generate('index.html', template_values);
+    self.response.out.write(self.generate('index.html', template_values));
 
 class ChatsRequestHandler(BaseRequestHandler):
-  def renderChats(self):
-    greetings_query = Greeting.all().order('-date')
-    greetings = greetings_query.fetch(50)
-    greetings.reverse()
-    
-    template_values = {
-      'greetings': greetings,
-    }
-    return self.generate('chats.html', template_values)
-      
-  def getChats(self, useCache=True):
-
-    if useCache is False:
-      greetings = self.renderChats()
-      if not memcache.set("chats", greetings):
-        logging.error("Memcache set failed:")
-      return greetings
-      
-    greetings = memcache.get("chats")
-    if greetings is not None:
-      return greetings
-    else:
-      greetings = self.renderChats()
-      if not memcache.set("chats", greetings):
-        logging.error("Memcache set failed:")
-      return greetings
-
-    
+  MEMCACHE_KEY = 'greetings'
+  MEMCACHE_TEMPLATE = 'greetings_template'
+  
   def get(self):
-    self.getChats()
-
+    logging.debug('GETTING CHATSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS!')
+    template = memcache.get(self.MEMCACHE_TEMPLATE)
+    self.response.out.write(template)
+    
   def post(self):
+    logging.debug("POSTING CHATSSSSSSSSS")
     greeting = Greeting()
 
     if users.get_current_user():
       greeting.author = users.get_current_user()
-
+    
     greeting.content = self.request.get('content')
+    logging.debug(greeting.content)
     greeting.put()
+    
+    greetingsString = memcache.get(self.MEMCACHE_KEY)
+    if greetingsString is None:
+      greetingsList = []
+    else:
+      greetingsList = pickle.loads(greetingsString)
+      if len(greetingsList) >= 40:
+        greetingsList.pop(0)
+    greetingsList.append(greeting)
+    
+    if not memcache.set(self.MEMCACHE_KEY, pickle.dumps(greetingsList)):
+        logging.debug("Memcache set failed:")  
 
-    self.getChats(False)
+    template_values = {
+      'greetings': greetingsList,
+    }
+    template = self.generate('chats.html', template_values)
+    if not memcache.set(self.MEMCACHE_TEMPLATE, template):
+        logging.debug("Memcache set failed:")          
+    
+    self.response.out.write(template)
 
     
 class EditUserProfileHandler(BaseRequestHandler):
@@ -138,7 +137,7 @@ class EditUserProfileHandler(BaseRequestHandler):
       greeting_user = GreetingUser(greeting_user=greeting_user_object)
       greeting_user.put()
 
-    self.generate('edit_user.html', template_values={'queried_user': greeting_user})
+    self.response.out.write(self.generate('edit_user.html', template_values={'queried_user': greeting_user}))
 
   def post(self, user):
     # Get the user information
@@ -175,7 +174,7 @@ class UserProfileHandler(BaseRequestHandler):
     greeting_user = GreetingUser.gql('WHERE greeting_user = :1', greeting_user_object).get()
 
     # Generate the user profile
-    self.generate('user.html', template_values={'queried_user': greeting_user})
+    self.response.out.write(self.generate('user.html', template_values={'queried_user': greeting_user}))
 
                                                 
 application = webapp.WSGIApplication(
