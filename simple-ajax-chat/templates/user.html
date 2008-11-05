@@ -1,6 +1,8 @@
-<html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <link type="text/css" rel="stylesheet" href="/css/main.css" />
+    <link type="text/css" rel="stylesheet" href="/css/main.css" media="screen" />
   </head>
   <body>
   <div class="wrapper">
@@ -8,7 +10,7 @@
   {% block title %}<h1>Profile</h1>{% endblock %}
   {% block content %}
   <h2>
-	{% if queried_user.picture %}<img src="{{ queried_user.picture }}" />{% endif %}
+	{% ifnotequal queried_user.picture "None" %}<img src="{{ queried_user.picture }}" />{% endifnotequal %}
 	 {{ queried_user.greeting_user.nickname }}</h2>
   <dl id="user-profile">
   	<dt>Email:</dt>
