@@ -5,6 +5,7 @@
       {% else %}
       no-name:
       {% endif %}
+      <div style="display:none">({{ greeting.date }})</div>
       {{ greeting.content|escape }}
       </div> 
 {% endfor %}

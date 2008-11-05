@@ -3,13 +3,22 @@
     <link type="text/css" rel="stylesheet" href="/css/main.css" />
   </head>
   <body>
-{% block title %}User Info{% endblock %}
-{% block content %}
-<h1> Profile: {{ queried_user.greeting_user.nickname }}</h1>
-<p>Email: {{ queried_user.greeting_user.email }}</p>
-<p>Website: {{ queried_user.website }}</p>
-<p>Seated: {{ queried_user.seated }}</p>
-<p>Picture: </p><img src="{{ queried_user.picture }}">
-{% endblock %}
- </body>
+  <div class="wrapper">
+  <p><a href="/">&laquo; Back to chatroom</a></p>
+  {% block title %}<h1>Profile</h1>{% endblock %}
+  {% block content %}
+  <h2>
+	{% if queried_user.picture %}<img src="{{ queried_user.picture }}" />{% endif %}
+	 {{ queried_user.greeting_user.nickname }}</h2>
+  <dl id="user-profile">
+  	<dt>Email:</dt>
+		<dd>{{ queried_user.greeting_user.email }}</dd>
+	<dt>Website:</dt>
+		<dd>{{ queried_user.website }}</dd>
+	<dt>Seated:</dt>
+		<dd>{{ queried_user.seated }}</dd>
+  </dl>
+  {% endblock %}
+  </div>
+  </body>
 </html>

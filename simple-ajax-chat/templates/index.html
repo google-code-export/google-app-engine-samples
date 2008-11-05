@@ -1,10 +1,10 @@
 <html>
   <head>
-    <title>Simple AJAX Chat</title>
+  	<title>Simple Ajax Chat</title>
     <link type="text/css" rel="stylesheet" href="/css/main.css" />
     <script src="/js/util.js"></script>
-    <script src="/js/highlightuser.js"></script>
-    <script>
+	<script src="/js/highlightuser.js"></script>
+     <script>
     var CURRENT_USER = '{{ user.nickname }}';
     var CHATS_DIV = null;
     
@@ -44,25 +44,30 @@
 	}
 
 	</script>
-  </head>
+  </head>                                                                                     
   <body onload="setup()">
+  <div class="wrapper">
   	{% if user %}
-    	<div align="right">Logged in as {{ user.nickname }} - 
-          <a href="/edituser/{{ user.email }}">Edit My Profile</a> -
-    	  <a href="{{log_in_out_url}}">Log out</a> </div>
+		<ul id="userbar">
+			<li class="first"><!--// Maybe you can place avatar here //--> Logged in as {{ user.nickname }}</li>
+			<li><a href="/edituser/{{ user.email }}">Edit My Profile</a></li>
+			<li class="last"><a href="{{log_in_out_url}}">Log out</a></li>
+		</ul>
    	{% else %}
-    	<div align="right"><a href="{{log_in_out_url}}">Log in</a></div>
+		<ul id="userbar">
+    		<li class="first last"><a href="{{log_in_out_url}}">Log in</a></li>
+		</ul>
     {% endif %}
    
-    <div id="chats" style="padding:10px;background-color:white;width:97%;height:80%; overflow:auto;">
-	</div>
-	<br/>
-	<div>
-    <form action="javascript:sendChat();">
-      <div><input name="content" type="text" id="chattext" size="100"></input>
-      <input type="submit" value="Chat">
-      <input type="button" value="Force Refresh" onclick="updateChat()"></div>
+    <div id="chats"></div>
+	
+	<form id="send-chat-form" action="javascript:sendChat();">
+      	<div class="form-item">
+	  		<input name="content" type="text" class="form-textfield" id="chattext" size="100" />
+			<input type="submit" class="form-submit" value="Send" />
+			<input type="button" class="form-refresh" value="Refresh" onclick="updateChat()" />
+		</div>
     </form>
-    </div>
+  </div>  
   </body>
 </html>
