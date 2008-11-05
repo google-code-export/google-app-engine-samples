@@ -83,19 +83,16 @@ class ChatsRequestHandler(BaseRequestHandler):
   MEMCACHE_TEMPLATE = 'greetings_template'
   
   def get(self):
-    logging.debug('GETTING CHATSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS!')
     template = memcache.get(self.MEMCACHE_TEMPLATE)
     self.response.out.write(template)
     
   def post(self):
-    logging.debug("POSTING CHATSSSSSSSSS")
     greeting = Greeting()
 
     if users.get_current_user():
       greeting.author = users.get_current_user()
     
     greeting.content = self.request.get('content')
-    logging.debug(greeting.content)
     greeting.put()
     
     greetingsString = memcache.get(self.MEMCACHE_KEY)
