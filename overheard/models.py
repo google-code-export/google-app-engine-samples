@@ -29,6 +29,7 @@ from google.appengine.api import users
 PAGE_SIZE = 5
 DAY_SCALE = 4
 
+
 class Quote(db.Model):
   """Storage for a single quote and its metadata
   
@@ -77,29 +78,40 @@ class Voter(db.Model):
   hasAddedQuote = db.BooleanProperty(default=False)  
 
 
-def get_progress(email):
+def _get_or_create_voter(user):
+  """
+  Find a matching Voter or create a new one with the
+  email as the key_name.
+  
+  Returns a Voter for the given user.
+  """
+  voter = Voter.get_by_key_name(user.email())
+  if voter is None:
+    voter = Voter(key_name=user.email())
+  return voter
+
+
+def get_progress(user):
   """
   Returns (hasVoted, hasAddedQuote) for the given user
   """
-  voter = Voter.get_by_key_name(email)
-  if voter == None:
-    voter = Voter(key_name=email)  
+  voter = _get_or_create_voter(user)
   return voter.hasVoted, voter.hasAddedQuote
   
-def _set_progress_hasVoted(email):
+
+def _set_progress_hasVoted(user):
   """
   Sets Voter.hasVoted = True for the given user.
   """
 
   def txn():
-    voter = Voter.get_by_key_name(email)
-    if voter == None:
-      voter = Voter(key_name=email)  
+    voter = _get_or_create_voter(user)
     if not voter.hasVoted:
       voter.hasVoted = True
       voter.put()
       
   db.run_in_transaction(txn)
+
 
 def _unique_user(user):
   """
@@ -107,12 +119,9 @@ def _unique_user(user):
   counter sharded per user. The resulting string
   is hashed to keep the users email address private.
   """
-  email = user.email()
   
   def txn():
-    voter = Voter.get_by_key_name(email)
-    if voter == None:
-      voter = Voter(key_name=email)  
+    voter = _get_or_create_voter(user)
     voter.count += 1
     voter.hasAddedQuote = True
     voter.put()
@@ -120,9 +129,10 @@ def _unique_user(user):
 
   count = db.run_in_transaction(txn)
 
-  return hashlib.md5(email + "|" + str(count)).hexdigest()
+  return hashlib.md5(user.email() + "|" + str(count)).hexdigest()
   
-def addquote(text, user, _created=None, uri=None):
+
+def add_quote(text, user, uri=None, _created=None):
   """
   Add a new quote to the datastore.
   
@@ -134,44 +144,47 @@ def addquote(text, user, _created=None, uri=None):
                 value, used only for testing.
   
   Returns  
-    The id of the quote.
+    The id of the quote or None if the add failed.
   """
+  try:
+    now = datetime.datetime.now()
+    unique_user = _unique_user(user)
+    if _created:
+      created = _created
+    else:
+      created = (now - datetime.datetime(2008, 10, 1)).days
+      
+    q = Quote(
+      quote=text, 
+      created=created, 
+      creator=user, 
+      creation_order = now.isoformat()[:19] + "|" + unique_user,
+      uri=uri
+    )
+    q.put()
+    return q.key().id()
+  except db.Error:
+    return None 
   
-  now = datetime.datetime.now()
-  unique_user = _unique_user(user)
-  if _created:
-    created = _created
-  else:
-    created = (now - datetime.datetime(2008, 10, 1)).days
-    
-  q = Quote(
-    quote=text, 
-    created=created, 
-    creator=user, 
-    creation_order = now.isoformat()[:19] + "|" + unique_user,
-    uri=uri
-  )
-  q.put()
-  return q.key().id()
-  
-def delquote(quoteid, user):
+def del_quote(quote_id, user):
   """
   Remove a quote.
   
   User must be the creator of the quote or a site administrator.
   """
-  q = Quote.get_by_id(quoteid)
-  if q != None and (users.is_current_user_admin() or q.creator == user):
+  q = Quote.get_by_id(quote_id)
+  if q is not None and (users.is_current_user_admin() or q.creator == user):
     q.delete()
 
-def getquote(quoteid):
+
+def get_quote(quote_id):
   """
   Retrieve a single quote.
   """
-  return Quote.get_by_id(quoteid)
+  return Quote.get_by_id(quote_id)
 
-  
-def getquotes_newest(offset=None):
+
+def get_quotes_newest(offset=None):
   """
   Returns 10 quotes per page in created order.
   
@@ -194,26 +207,27 @@ def getquotes_newest(offset=None):
     quotes = quotes[:PAGE_SIZE]
   return quotes, extra
 
-def setvote(quoteid, user, newvote):
+
+def set_vote(quote_id, user, newvote):
   """
-  Record 'user' casting a 'vote' for a quote with an id of 'quoteid'.
+  Record 'user' casting a 'vote' for a quote with an id of 'quote_id'.
   The 'newvote' is usually an integer in [-1, 0, 1].
   """
-  if user == None:
+  if user is None:
     return
   email = user.email()
-
   
   def txn():
-    quote = Quote.get_by_id(quoteid)
+    quote = Quote.get_by_id(quote_id)
     vote = Vote.get_by_key_name(key_names = user.email(), parent = quote)
-    if vote == None:
+    if vote is None:
       vote = Vote(key_name = user.email(), parent = quote)
     if vote.vote == newvote:
       return 
     quote.votesum = quote.votesum - vote.vote + newvote
     vote.vote = newvote
-    # Votes can't go negative, so how to calculate with a negative votesum?
+    # See the docstring of main.py for an explanation of
+    # the following formulas.
     votesum = quote.votesum
     if votesum < 1:
       votesum = 1.0/(2-votesum)
@@ -222,12 +236,13 @@ def setvote(quoteid, user, newvote):
       quote.creation_order
       )
     db.put([vote, quote])
-    memcache.set("vote|" + user.email() + "|" + str(quoteid), vote.vote)
+    memcache.set("vote|" + user.email() + "|" + str(quote_id), vote.vote)
 
   db.run_in_transaction(txn)
-  _set_progress_hasVoted(email)
+  _set_progress_hasVoted(user)
+
   
-def getquotes(page=0):
+def get_quotes(page=0):
   """Returns PAGE_SIZE quotes per page in rank order. Limit to 20 pages."""
   assert page >= 0
   assert page < 20
@@ -238,6 +253,7 @@ def getquotes(page=0):
       extra = quotes[-1]
     quotes = quotes[:PAGE_SIZE]
   return quotes, extra
+
   
 def voted(quote, user):
   """Returns the value of a users vote on the specified quote, a value in [-1, 0, 1]."""
@@ -245,10 +261,10 @@ def voted(quote, user):
   if user:
     memcachekey = "vote|" + user.email() + "|" + str(quote.key().id())
     val = memcache.get(memcachekey)
-    if val != None:
+    if val is not None:
       return val
     vote = Vote.get_by_key_name(key_names = user.email(), parent = quote)
-    if vote != None:
+    if vote is not None:
       val = vote.vote
       memcache.set(memcachekey, val)
   return val

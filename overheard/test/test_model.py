@@ -17,30 +17,30 @@ class TestModel(unittest.TestCase):
     Add and remove quotes from the system.
     """
     user = users.User("joe@example.com")
-    quoteid = models.addquote("This is a test.", user)
+    quoteid = models.add_quote("This is a test.", user)
     time.sleep(1.1)
-    quoteid2 = models.addquote("This is a test2.", user)
+    quoteid2 = models.add_quote("This is a test2.", user)
     self.assertNotEqual(quoteid, None)
     self.assertNotEqual(quoteid, 0)
     
     # Get the added quotes by creation order
-    quotes, next = models.getquotes_newest()
+    quotes, next = models.get_quotes_newest()
     self.assertEqual(quotes[0].key().id(), quoteid2)
-    self.assertEqual(models.getquote(quoteid2).key().id(), quoteid2)
+    self.assertEqual(models.get_quote(quoteid2).key().id(), quoteid2)
 
     self.assertEqual(len(quotes), 2)
     
     # Remove one quote
-    models.delquote(quoteid2, user)
+    models.del_quote(quoteid2, user)
 
-    quotes, next = models.getquotes_newest()
+    quotes, next = models.get_quotes_newest()
     self.assertEqual(quotes[0].key().id(), quoteid)
     self.assertEqual(len(quotes), 1)
     
 
     # Remove last remaining quote    
-    models.delquote(quoteid, user)
-    quotes, next = models.getquotes_newest()
+    models.del_quote(quoteid, user)
+    quotes, next = models.get_quotes_newest()
     self.assertEqual(len(quotes), 0)
 
   def test_del_quote_perms(self):
@@ -49,30 +49,30 @@ class TestModel(unittest.TestCase):
     """
     user = users.User("joe@example.com")
     user2 = users.User("fred@example.com")
-    quoteid = models.addquote("This is a test.", user)
+    quoteid = models.add_quote("This is a test.", user)
 
     # Get the added quotes by creation order
-    quotes, next = models.getquotes_newest()
+    quotes, next = models.get_quotes_newest()
     self.assertEqual(quotes[0].key().id(), quoteid)
     self.assertEqual(len(quotes), 1)
     
     # Remove one quote, should fail to remove the quote
-    models.delquote(quoteid, user2)
+    models.del_quote(quoteid, user2)
 
     # Confirm the quote is still in the system
-    quotes, next = models.getquotes_newest()
+    quotes, next = models.get_quotes_newest()
     self.assertEqual(quotes[0].key().id(), quoteid)
     self.assertEqual(len(quotes), 1)
 
     # Remove one remaining quote    
-    models.delquote(quoteid, user)
-    quotes, next = models.getquotes_newest()
+    models.del_quote(quoteid, user)
+    quotes, next = models.get_quotes_newest()
     self.assertEqual(len(quotes), 0)
 
     
   def test_del_non_existent(self):
     user = users.User("joe@example.com")
-    models.delquote(1, user)
+    models.del_quote(1, user)
     
   def test_paging_newest(self):
     """
@@ -81,47 +81,47 @@ class TestModel(unittest.TestCase):
     """
     user = users.User("joe@example.com")
     for i in range(models.PAGE_SIZE):
-      quoteid = models.addquote("This is a test.", user)
+      quoteid = models.add_quote("This is a test.", user)
       self.assertNotEqual(quoteid, None)
-    quotes, next = models.getquotes_newest()
+    quotes, next = models.get_quotes_newest()
     self.assertEqual(len(quotes), models.PAGE_SIZE)
     self.assertEqual(next, None)
 
-    quoteid = models.addquote("This is a test.", user)
+    quoteid = models.add_quote("This is a test.", user)
     self.assertNotEqual(quoteid, None)
     
-    quotes, next = models.getquotes_newest()
+    quotes, next = models.get_quotes_newest()
     
     self.assertEqual(len(quotes), models.PAGE_SIZE)
     self.assertNotEqual(next, None)
     
-    quotes, next = models.getquotes_newest(next)
+    quotes, next = models.get_quotes_newest(next)
     self.assertEqual(len(quotes), 1)
     self.assertEqual(next, None)
 
     # Cleanup    
-    models.delquote(quoteid, user)
-    quotes, next = models.getquotes_newest()
+    models.del_quote(quoteid, user)
+    quotes, next = models.get_quotes_newest()
     for q in quotes:
-      models.delquote(q.key().id(), user)
+      models.del_quote(q.key().id(), user)
     
   def test_game_progress(self):
     email = "fred@example.com"
     user = users.User(email)
 
-    hasVoted, hasAddedQuote = models.get_progress(email)
+    hasVoted, hasAddedQuote = models.get_progress(user)
     self.assertFalse(hasVoted)
     self.assertFalse(hasAddedQuote)
 
-    quoteid0 = models.addquote("This is a test.", user, _created=1)
+    quoteid0 = models.add_quote("This is a test.", user, _created=1)
     
-    hasVoted, hasAddedQuote = models.get_progress(email)
+    hasVoted, hasAddedQuote = models.get_progress(user)
     self.assertFalse(hasVoted)
     self.assertTrue(hasAddedQuote)
     
-    models.setvote(quoteid0, user, 1)
+    models.set_vote(quoteid0, user, 1)
     
-    hasVoted, hasAddedQuote = models.get_progress(email)
+    hasVoted, hasAddedQuote = models.get_progress(user)
     self.assertTrue(hasVoted)
     self.assertTrue(hasAddedQuote)
     
@@ -138,11 +138,11 @@ class TestModel(unittest.TestCase):
     # q0 (5) = 1 * 4 * 5 = 20
     # q1 (3) = 1 * 4 * 3 = 12
 
-    quoteid0 = models.addquote("This is a test.", user, _created=1)
-    quoteid1 = models.addquote("This is a test.", user, _created=1)    
-    models.setvote(quoteid0, user, 1)
-    models.setvote(quoteid1, user, 3)
-    quotes, next = models.getquotes()
+    quoteid0 = models.add_quote("This is a test.", user, _created=1)
+    quoteid1 = models.add_quote("This is a test.", user, _created=1)    
+    models.set_vote(quoteid0, user, 1)
+    models.set_vote(quoteid1, user, 3)
+    quotes, next = models.get_quotes()
 
     self.assertEqual(models.voted(quotes[1], user), 1)
     self.assertEqual(models.voted(quotes[0], user), 3)
@@ -150,20 +150,20 @@ class TestModel(unittest.TestCase):
     self.assertEqual(quotes[0].key().id(), quoteid1)
     self.assertEqual(quotes[1].key().id(), quoteid0)
     
-    models.setvote(quoteid0, user, 5)
-    quotes, next = models.getquotes()
+    models.set_vote(quoteid0, user, 5)
+    quotes, next = models.get_quotes()
     self.assertEqual(quotes[0].key().id(), quoteid0)
     self.assertEqual(quotes[1].key().id(), quoteid1)
 
     # q0 (5) + (3) = 1 * 4 * 8 = 32
     # q1 (3) + (0) = 1 * 4 * 3 = 12
     # q2       (3) = 2 * 4 * 3 = 24
-    quoteid2 = models.addquote("This is a test.", user, _created=2)
+    quoteid2 = models.add_quote("This is a test.", user, _created=2)
 
-    models.setvote(quoteid0, user, 8)
-    models.setvote(quoteid1, user, 3)
-    models.setvote(quoteid2, user, 3)
-    quotes, next = models.getquotes()
+    models.set_vote(quoteid0, user, 8)
+    models.set_vote(quoteid1, user, 3)
+    models.set_vote(quoteid2, user, 3)
+    quotes, next = models.get_quotes()
 
     self.assertEqual(quotes[0].key().id(), quoteid0)
     self.assertEqual(quotes[1].key().id(), quoteid2)
@@ -175,13 +175,13 @@ class TestModel(unittest.TestCase):
     # q2       (3) + (1) = 2 * 4 * 4 = 32
     # q3             (5) = 3 * 4 * 5 = 60      
 
-    quoteid3 = models.addquote("This is a test.", user, _created=3)
+    quoteid3 = models.add_quote("This is a test.", user, _created=3)
 
-    models.setvote(quoteid0, user, 8)
-    models.setvote(quoteid1, user, 3)
-    models.setvote(quoteid2, user, 4)
-    models.setvote(quoteid3, user, 5)
-    quotes, next = models.getquotes()
+    models.set_vote(quoteid0, user, 8)
+    models.set_vote(quoteid1, user, 3)
+    models.set_vote(quoteid2, user, 4)
+    models.set_vote(quoteid3, user, 5)
+    quotes, next = models.get_quotes()
     
     self.assertEqual(quotes[0].key().id(), quoteid3)
     self.assertEqual(quotes[1].key().id(), quoteid2)
@@ -194,18 +194,18 @@ class TestModel(unittest.TestCase):
     # q2       (3) + (1) = 2 * 4 * 4   = 32
     # q3             (0) = 3 * 4 * 1/2 = 6      
 
-    models.setvote(quoteid3, user, 0)
-    quotes, next = models.getquotes()
+    models.set_vote(quoteid3, user, 0)
+    quotes, next = models.get_quotes()
 
     self.assertEqual(quotes[0].key().id(), quoteid2)
     self.assertEqual(quotes[1].key().id(), quoteid0)
     self.assertEqual(quotes[2].key().id(), quoteid1)
     self.assertEqual(quotes[3].key().id(), quoteid3)
 
-    models.delquote(quoteid0, user)
-    models.delquote(quoteid1, user)
-    models.delquote(quoteid2, user)
-    models.delquote(quoteid3, user)
+    models.del_quote(quoteid0, user)
+    models.del_quote(quoteid1, user)
+    models.del_quote(quoteid2, user)
+    models.del_quote(quoteid3, user)
 
     
 if __name__ == '__main__':
