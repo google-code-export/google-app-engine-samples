@@ -42,7 +42,8 @@ Decay:
      rank = created * DAY_SCALE * votesum
 
   created    = Number of days after 10/1/2008 that the quote created.
-  DAY_SCALE  = This is a constant that determines how quickly votes should decay (defaults to 4).
+  DAY_SCALE  = This is a constant that determines how quickly votes 
+               should decay (defaults to 4).
   votesum    = Sum of all +1 and -1 votes for a quote.
 
   We'll allocate 24 bits for 'created' and 5 bits for DAY_SCALE and 24 bits for votesum.
@@ -160,10 +161,10 @@ def quote_for_template(quotes, user, page=0):
       'uri': quote.uri,
       'voted': models.voted(quote, user),
       'quote': quote.quote,
-      'creator' : quote.creator,
-      'created' : quote.creation_order[:10],
-      'created_long' : quote.creation_order[:19],
-      'votesum' : quote.votesum,
+      'creator': quote.creator,
+      'created': quote.creation_order[:10],
+      'created_long': quote.creation_order[:19],
+      'votesum': quote.votesum,
       'index':  index        
     })
     index += 1
@@ -220,7 +221,9 @@ class MainHandler(webapp.RequestHandler):
     else:
       prevuri = None
 
-    template_values = create_template_dict(user, quotes, 'Popular', nexturi, prevuri, page)    
+    template_values = create_template_dict(
+        user, quotes, 'Popular', nexturi, prevuri, page
+      )    
     template_file = os.path.join(os.path.dirname(__file__), 'templates/index.html')    
     self.response.out.write(template.render(template_file, template_values))
     
@@ -248,7 +251,9 @@ class MainHandler(webapp.RequestHandler):
          'uri' : uri,
          'error_msg' : 'The supplied link is not a valid absolute URI'
       }
-      template_file = os.path.join(os.path.dirname(__file__), 'templates/add_quote_error.html')    
+      template_file = os.path.join(os.path.dirname(__file__), 
+          'templates/add_quote_error.html'
+      )
       self.response.out.write(template.render(template_file, template_values))
     else:
       quote_id = models.add_quote(text, user, uri=uri)
@@ -263,9 +268,11 @@ class MainHandler(webapp.RequestHandler):
            'loggedin': user,
            'text' : text,
            'uri' : uri,
-           'error_msg' : 'A datastore error occured while adding this quote, please try again.'
+           'error_msg' : 'An error occured while adding this quote, please try again.'
         }
-        template_file = os.path.join(os.path.dirname(__file__), 'templates/add_quote_error.html')    
+        template_file = os.path.join(os.path.dirname(__file__), 
+            'templates/add_quote_error.html'
+          )    
         self.response.out.write(template.render(template_file, template_values))        
 
 

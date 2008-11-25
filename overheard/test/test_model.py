@@ -16,10 +16,10 @@ class TestModel(unittest.TestCase):
     """
     Add and remove quotes from the system.
     """
-    user = users.User("joe@example.com")
-    quoteid = models.add_quote("This is a test.", user)
+    user = users.User('joe@example.com')
+    quoteid = models.add_quote('This is a test.', user)
     time.sleep(1.1)
-    quoteid2 = models.add_quote("This is a test2.", user)
+    quoteid2 = models.add_quote('This is a test2.', user)
     self.assertNotEqual(quoteid, None)
     self.assertNotEqual(quoteid, 0)
     
@@ -47,9 +47,9 @@ class TestModel(unittest.TestCase):
     """
     Permissions of removing quotes.
     """
-    user = users.User("joe@example.com")
-    user2 = users.User("fred@example.com")
-    quoteid = models.add_quote("This is a test.", user)
+    user = users.User('joe@example.com')
+    user2 = users.User('fred@example.com')
+    quoteid = models.add_quote('This is a test.', user)
 
     # Get the added quotes by creation order
     quotes, next = models.get_quotes_newest()
@@ -71,7 +71,7 @@ class TestModel(unittest.TestCase):
 
     
   def test_del_non_existent(self):
-    user = users.User("joe@example.com")
+    user = users.User('joe@example.com')
     models.del_quote(1, user)
     
   def test_paging_newest(self):
@@ -79,15 +79,15 @@ class TestModel(unittest.TestCase):
     Test that we can page through the quotes in 
     the order that they were added.
     """
-    user = users.User("joe@example.com")
+    user = users.User('joe@example.com')
     for i in range(models.PAGE_SIZE):
-      quoteid = models.add_quote("This is a test.", user)
+      quoteid = models.add_quote('This is a test.', user)
       self.assertNotEqual(quoteid, None)
     quotes, next = models.get_quotes_newest()
     self.assertEqual(len(quotes), models.PAGE_SIZE)
     self.assertEqual(next, None)
 
-    quoteid = models.add_quote("This is a test.", user)
+    quoteid = models.add_quote('This is a test.', user)
     self.assertNotEqual(quoteid, None)
     
     quotes, next = models.get_quotes_newest()
@@ -106,14 +106,14 @@ class TestModel(unittest.TestCase):
       models.del_quote(q.key().id(), user)
     
   def test_game_progress(self):
-    email = "fred@example.com"
+    email = 'fred@example.com'
     user = users.User(email)
 
     hasVoted, hasAddedQuote = models.get_progress(user)
     self.assertFalse(hasVoted)
     self.assertFalse(hasAddedQuote)
 
-    quoteid0 = models.add_quote("This is a test.", user, _created=1)
+    quoteid0 = models.add_quote('This is a test.', user, _created=1)
     
     hasVoted, hasAddedQuote = models.get_progress(user)
     self.assertFalse(hasVoted)
@@ -130,16 +130,16 @@ class TestModel(unittest.TestCase):
     Test the voting system behaves as defined in the 
     design document.
     """
-    user = users.User("fred@example.com")
-    user2 = users.User("barney@example.com")
+    user = users.User('fred@example.com')
+    user2 = users.User('barney@example.com')
     
     # Day 1 -  [quote 0 and 1 are added on Day 1 and
     #            get 5 and 3 votes respectively. Rank is q0, q1.]
     # q0 (5) = 1 * 4 * 5 = 20
     # q1 (3) = 1 * 4 * 3 = 12
 
-    quoteid0 = models.add_quote("This is a test.", user, _created=1)
-    quoteid1 = models.add_quote("This is a test.", user, _created=1)    
+    quoteid0 = models.add_quote('This is a test.', user, _created=1)
+    quoteid1 = models.add_quote('This is a test.', user, _created=1)    
     models.set_vote(quoteid0, user, 1)
     models.set_vote(quoteid1, user, 3)
     quotes, next = models.get_quotes()
@@ -158,7 +158,7 @@ class TestModel(unittest.TestCase):
     # q0 (5) + (3) = 1 * 4 * 8 = 32
     # q1 (3) + (0) = 1 * 4 * 3 = 12
     # q2       (3) = 2 * 4 * 3 = 24
-    quoteid2 = models.add_quote("This is a test.", user, _created=2)
+    quoteid2 = models.add_quote('This is a test.', user, _created=2)
 
     models.set_vote(quoteid0, user, 8)
     models.set_vote(quoteid1, user, 3)
@@ -175,7 +175,7 @@ class TestModel(unittest.TestCase):
     # q2       (3) + (1) = 2 * 4 * 4 = 32
     # q3             (5) = 3 * 4 * 5 = 60      
 
-    quoteid3 = models.add_quote("This is a test.", user, _created=3)
+    quoteid3 = models.add_quote('This is a test.', user, _created=3)
 
     models.set_vote(quoteid0, user, 8)
     models.set_vote(quoteid1, user, 3)
