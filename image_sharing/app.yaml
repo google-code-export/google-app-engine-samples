@@ -1,0 +1,18 @@
+# Image Sharing - a sample web picture sharing application for AppEngine
+# Author: frew@google.com (Fred Wulff)
+
+application: image_sharing
+version: 1
+runtime: python
+api_version: 1
+
+handlers:
+- url: /media
+  static_dir: media
+
+- url: /(new|upload.*)
+  script: image_sharing.py
+  login: required
+
+- url: /.*
+  script: image_sharing.py
