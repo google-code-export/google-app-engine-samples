@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Pabla, a simple picture sharing application running on App Engine.
+"""Image Sharing, a simple picture sharing application running on App Engine.
 
 Specific App Engine features demonstrated include:
  * the Image API, which is used for creating thumbnails of uploaded pictures
@@ -86,8 +86,8 @@ class Picture(db.Model):
   thumbnail_data = db.BlobProperty()
 
 
-class PablaBaseHandler(webapp.RequestHandler):
-  """Base Pabla RequestHandlers with some convenience functions."""
+class ImageSharingBaseHandler(webapp.RequestHandler):
+  """Base Image Sharing RequestHandlers with some convenience functions."""
 
   def template_path(self, filename):
     """Returns the full path for a template from its path relative to here."""
@@ -106,7 +106,7 @@ class PablaBaseHandler(webapp.RequestHandler):
     )
 
 
-class PablaAlbumIndex(PablaBaseHandler):
+class ImageSharingAlbumIndex(ImageSharingBaseHandler):
   """Handler for listing albums."""
 
   def get(self):
@@ -117,7 +117,7 @@ class PablaAlbumIndex(PablaBaseHandler):
       })
 
 
-class PablaAlbumCreate(PablaBaseHandler):
+class ImageSharingAlbumCreate(ImageSharingBaseHandler):
   """Handler for creating a new Album via form."""
 
   def get(self):
@@ -132,7 +132,7 @@ class PablaAlbumCreate(PablaBaseHandler):
 
 PICTURES_PER_ROW = 5
 
-class PablaAlbumView(PablaBaseHandler):
+class ImageSharingAlbumView(ImageSharingBaseHandler):
   """Handler for viewing the pictures in a particular album."""
 
   def get(self, album_key):
@@ -165,7 +165,7 @@ class PablaAlbumView(PablaBaseHandler):
       })
 
 
-class PablaUploadImage(PablaBaseHandler):
+class ImageSharingUploadImage(ImageSharingBaseHandler):
   """Handler for uploading images."""
 
   def get(self, album_key):
@@ -235,11 +235,11 @@ class PablaUploadImage(PablaBaseHandler):
       self.response.out.write(
           'Sorry, the image provided was too large for us to process.')
 
-class PablaShowImage(PablaBaseHandler):
+class ImageSharingShowImage(ImageSharingBaseHandler):
   """Handler for viewing a single image.
 
   Note that this doesn't actually serve the picture, only the page
-  containing it. That happens in PablaServeImage.
+  containing it. That happens in ImageSharingServeImage.
   """
 
   def get(self, pic_key):
@@ -256,7 +256,7 @@ class PablaShowImage(PablaBaseHandler):
     })
 
 
-class PablaServeImage(webapp.RequestHandler):
+class ImageSharingServeImage(webapp.RequestHandler):
   """Handler for dynamically serving an image from the datastore.
 
   Very simple - it just pulls the appropriate data out of the datastore
@@ -283,7 +283,7 @@ class PablaServeImage(webapp.RequestHandler):
       self.response.out.write(
           'Couldn\'t determine what type of image to serve.')
 
-class PablaSearch(PablaBaseHandler):
+class ImageSharingSearch(ImageSharingBaseHandler):
   """Handler for searching pictures by tag."""
 
   def get(self):
@@ -303,13 +303,13 @@ class PablaSearch(PablaBaseHandler):
 
 
 def main():
-  url_map = [('/', PablaAlbumIndex),
-             ('/new', PablaAlbumCreate),
-             ('/album/([-\w]+)', PablaAlbumView),
-             ('/upload/([-\w]+)', PablaUploadImage),
-             ('/show_image/([-\w]+)', PablaShowImage),
-             ('/(thumbnail|image)/([-\w]+)', PablaServeImage),
-             ('/search', PablaSearch)]
+  url_map = [('/', ImageSharingAlbumIndex),
+             ('/new', ImageSharingAlbumCreate),
+             ('/album/([-\w]+)', ImageSharingAlbumView),
+             ('/upload/([-\w]+)', ImageSharingUploadImage),
+             ('/show_image/([-\w]+)', ImageSharingShowImage),
+             ('/(thumbnail|image)/([-\w]+)', ImageSharingServeImage),
+             ('/search', ImageSharingSearch)]
   application = webapp.WSGIApplication(url_map,
                                        debug=True)
   wsgiref.handlers.CGIHandler().run(application)

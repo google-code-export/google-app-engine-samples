@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Custom template tags for base.html of the Pabla demo app."""
+"""Custom template tags for base.html of the Image Sharing demo app."""
 
 __author__ = 'Fred Wulff'
 
@@ -31,8 +31,8 @@ def render_user_link(current_uri):
   """Renders a link that the user can use to log into or out of Google account.
 
   This is a custom tag since it's included in the header of virtually every
-  page served by Pabla, and we don't want to force views to pass the user in
-  the template context every time.
+  page served by Image Sharing, and we don't want to force views to pass the
+  user in the template context every time.
 
   Args:
     current_uri: the uri of the page currently being rendered

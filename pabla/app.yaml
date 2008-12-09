@@ -1,7 +1,7 @@
-# Pabla - a sample web picture sharing application for AppEngine
+# Image Sharing - a sample web picture sharing application for AppEngine
 # Author: frew@google.com (Fred Wulff)
 
-application: pabla
+application: image_sharing
 version: 1
 runtime: python
 api_version: 1
@@ -11,8 +11,8 @@ handlers:
   static_dir: media
 
 - url: /(new|upload.*)
-  script: pabla.py
+  script: image_sharing.py
   login: required
 
 - url: /.*
-  script: pabla.py
+  script: image_sharing.py
