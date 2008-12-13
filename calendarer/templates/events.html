@@ -1,0 +1,60 @@
+    <h1 id="header">Your Events</h1>
+    {% if owned_events or invited_events %}
+      {% if owned_events %}
+        <h3>Events you have created:</h3>
+        {% for event in owned_events %}
+          <div class="event">
+          <h4>{{event.title|escape}}</h4> 
+          {{event.description|escape}}<br/>
+          {{event.location}}<br/>
+          <!-- TODO: show time of the event, etc. -->
+          {% if event.gcal_event_link %}
+            <!-- View this event on your Google Calendar -->
+            <a href="{{event.gcal_event_link}}">View Google Calendar Event</a>
+          {% else %}
+            {% if token_request_url %}
+              <!-- Link allows this app to access your Google Calendar -->
+              <a href="{{token_request_url}}">Use Google Calendar</a>
+            {% else %}
+              <!-- Form to add this event to your Google Calendar -->
+              <form action="/events" method="post">
+                <input type="hidden" name="event_id" 
+                       value="{{event.key.id}}"/>
+                <input type="submit" value="Add to Google Calendar"/>
+              </form>
+            {% endif %}
+          {% endif %}
+          <form action="/edit_event" method="get">
+            <input type="hidden" name="event_id" value="{{event.key.id}}"/>
+            <input type="submit" value="Edit Event"/>
+          </form>
+          <form action="/delete_event" method="get">
+            <input type="hidden" name="event_id" value="{{event.key.id}}"/>
+            <input type="submit" value="Delete Event"/>
+          </form>
+          </div>
+          <br/>
+        {% endfor %}
+      {% endif %}
+      {% if invited_events %}
+        <h3>Events you are invited to:</h3>
+        {% for event in invited_events %}
+          <div class="invited">
+          <h4>{{event.title|escape}}</h4> 
+          {{event.description|escape}}<br/>
+          {{event.location}}<br/>
+          <!-- TODO: show time of the event, etc. -->
+          {% if event.gcal_event_link %}
+            <!-- View this event on your Google Calendar -->
+            <a href="{{event.gcal_event_link}}">View Google Calendar Event</a>
+          {% endif %}
+          </div>
+          <br/>
+        {% endfor %}
+      {% endif %}
+    {% else %}
+      You don't have any events yet.
+    {% endif %}
+    <!-- TODO: make this link feel more like a button -->
+        <a href="/create">Create an Event</a>
+      </div>

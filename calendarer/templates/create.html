@@ -1,0 +1,29 @@
+    <!-- Inclusions for the date picker. -->
+    <script type="text/javascript" src="/static/jquery.js"></script>
+    <script type="text/javascript" src="/static/jquery-calendar.js"></script>		
+    <link rel="stylesheet" type="text/css" href="/static/jquery-calendar.css" />
+    <h1 id="header">Create a new event</h1>
+    <form  id="event_form" action="/create" method="post">
+      <label for="name" class="create">Name of Event:</label><input name="name" type="text"><br/>
+      <label for="location" class="create">Location:<br/>("My House" or "900 Imaginary St., My City..."</label><input name="location" type="text"><br/>
+      <label for="datetimstamp" class="create">When does it start?:</label><input type="text" id="calendar1" class="calendarFocus"/><br/>
+      <input name="datetimestamp" id="datetimestamp_hidden" type="hidden" value="" />
+      <label for="description" class="create">Event Description:</label><textarea name="description"></textarea><br/>
+      <label for="attendees" class="create">Attendees<br/>(email addresses separated by commas):</label><textarea name="attendees"></textarea><br/>
+      <p>Your attendees will see this event listed if they sign in to this website. If you choose to create a Google Calendar event for this event, the attendees will receive an email invitation and this will be added to their Google Calendar.</p>
+      <input type="button" id="calendar_set_timestamp" value="Create Event"/>
+    </form>
+    <script>
+      $(document).ready(function (){ 
+        $("#calendar1, #calendar2").calendar();
+        $("#calendar_set_timestamp").click(function(){
+	        var hiddenTime = document.getElementById('datetimestamp_hidden');
+                var eventDate = popUpCal.parseDate($('#calendar1').val());
+                hiddenTime.value = [eventDate.getUTCDate(), '/', eventDate.getUTCMonth(), 
+                                    '/', eventDate.getUTCFullYear(), ' ', 
+                                    eventDate.getUTCHours(), ':', 
+                                    eventDate.getUTCMinutes()].join('');
+	        document.getElementById('event_form').submit();
+	      });
+      });
+    </script>

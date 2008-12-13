@@ -1,0 +1,9 @@
+    <div id="nav">
+      <a href="/events">Your Events</a>
+      {% if signed_in %}
+      You are signed in!
+      <a href="{{ user_link }}">sign out</a>
+      {% else %}
+      <a href="{{ user_link }}">Please sign in</a>
+      {% endif %}
+    </div>
