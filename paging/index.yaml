@@ -10,19 +10,19 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
-# Used 8 times in query history.
+# Used 15 times in query history.
 - kind: Suggestion
   properties:
   - name: when
     direction: desc
 
-# Used 4 times in query history.
+# Used 8 times in query history.
 - kind: Suggestion2
   properties:
   - name: created
   - name: __key__
 
-# Used 10 times in query history.
+# Used 16 times in query history.
 - kind: Suggestion2
   properties:
   - name: created
