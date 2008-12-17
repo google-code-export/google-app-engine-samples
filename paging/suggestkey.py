@@ -132,7 +132,7 @@ class Suggestion2Populate(webapp.RequestHandler):
   def post(self):
     now = datetime.datetime.now()
     for i in range(6):
-      s = Suggestion2(suggestion = "Suggestion %d" % i, created = now)
+      s = Suggestion2(suggestion = 'Suggestion %d' % i, created = now)
       s.put()
     self.redirect('/key/')
         

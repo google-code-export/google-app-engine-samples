@@ -139,7 +139,7 @@ class SuggestionPopulate(webapp.RequestHandler):
   def post(self):
     now = datetime.datetime.now()
     for i in range(6):
-      s = Suggestion(suggestion = "Suggestion %d" % i, created = now, when = whenfromcreated(now))
+      s = Suggestion(suggestion = 'Suggestion %d' % i, created = now, when = whenfromcreated(now))
       s.put()
 
     self.redirect('/unique/')       
