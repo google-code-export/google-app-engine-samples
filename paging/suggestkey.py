@@ -1,8 +1,34 @@
 #!/usr/bin/env python
+#
+# Copyright 2008 Google Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
+"""Suggestion Box - An example paging application.
+
+A simple Suggestion Box application that demonstrates
+paging by using the __key__ property provided for every
+entity.
+
+"""
+
+import base64
 import datetime
 import hashlib
+import logging
 import os
+import pickle
 import wsgiref.handlers
 
 from google.appengine.ext import webapp
@@ -10,47 +36,80 @@ from google.appengine.ext.webapp import template
 from google.appengine.ext import db
 from google.appengine.api import users
 from google.appengine.ext.webapp.util import login_required
-
-import pickle
-import base64
-import logging
 from time import mktime
 
+
+PAGESIZE = 5  
+
+
+class Suggestion2(db.Model):
+  """
+  A suggestion in the suggestion box, which we want to display
+  in the order they were created.
+  """
+  suggestion = db.StringProperty()
+  created = db.DateTimeProperty(auto_now_add=True)  
+
+
 def encodebookmark(created, key):
+  """
+  From the created timestamp and the key for an entity create
+  a base64 encoded bookmark that can be used for paging.
+  
+  Args:
+    created:  datetime when the entity was created.
+    key:      db.Key() of the entity.
+  
+  Returns:
+    A base64 encoded representation of the values.
+  """
   timestamp = mktime(created.timetuple())+1e-6*created.microsecond
   return base64.b64encode("%f|%s" % (timestamp, key))
 
+
 def decodebookmark(b64bookmark):
+  """
+  Takes a string encoded by 'encodebookmark' and reverses 
+  the process.
+  
+  Args:
+    A base64 encoded representation of the values.
+  
+  Returns:
+    (created, key) where 
+    
+    created:  datetime when the entity was created.
+    key:      db.Key() of the entity.
+  """
   timestamp, key = base64.b64decode(b64bookmark).split('|')
   created = datetime.datetime.fromtimestamp(float(timestamp))
   return created, key
 
-
-class Suggestion2(db.Model):
-  suggestion = db.StringProperty()
-  created = db.DateTimeProperty(auto_now_add=True)  
   
-PAGESIZE = 5  
-
 class Suggestion2Handler(webapp.RequestHandler):
+  """
+  Handles the creation of a single Suggestion, and the display
+  of suggestions broken into PAGESIZE pages.
+  """
 
+  @login_required
   def get(self):
     offset = self.request.get('offset')
     next = None
     if offset:
       created, key = decodebookmark(offset)
-      logging.info("key = %s, created = %s" % (key, created))
-      suggestions = Suggestion2.gql(" WHERE created = :created AND __key__ >= :key ORDER BY __key__ ASC", created = created, key = db.Key(key)).fetch(PAGESIZE+1) 
+      logging.info('key = %s, created = %s' % (key, created))
+      suggestions = Suggestion2.gql(' WHERE created = :created AND __key__ >= :key ORDER BY __key__ ASC', created = created, key = db.Key(key)).fetch(PAGESIZE+1) 
       logging.info(type(suggestions))
       if len(suggestions) < (PAGESIZE + 1):
-        logging.info("Going for more, only got %d" % len(suggestions))
+        logging.info('Going for more entities since we only got %d' % len(suggestions))
         remainder = PAGESIZE + 1 - len(suggestions)
         moresuggestions = Suggestion2.gql('WHERE created < :created ORDER BY created DESC, __key__ ASC', created = created).fetch(remainder)
-        logging.info("Got %d more" % len(moresuggestions))
+        logging.info('Got %d more' % len(moresuggestions))
         suggestions += moresuggestions
-        logging.info("Total %d" % len(suggestions))
+        logging.info('For a total of %d entities' % len(suggestions))
     else:
-      suggestions = Suggestion2.gql("ORDER BY created DESC, __key__ ASC").fetch(PAGESIZE+1)
+      suggestions = Suggestion2.gql('ORDER BY created DESC, __key__ ASC').fetch(PAGESIZE+1)
     if len(suggestions) == PAGESIZE+1:
       next = encodebookmark(suggestions[-1].created, suggestions[-1].key())
       suggestions = suggestions[:PAGESIZE]
@@ -63,8 +122,13 @@ class Suggestion2Handler(webapp.RequestHandler):
     s = Suggestion2(suggestion = self.request.get('suggestion'))        
     s.put()
     self.redirect('/key/')
+
     
 class Suggestion2Populate(webapp.RequestHandler):
+  """
+  Handles populating the datastore with some sample
+  Suggestions to see how the paging works.
+  """
   def post(self):
     now = datetime.datetime.now()
     for i in range(6):
