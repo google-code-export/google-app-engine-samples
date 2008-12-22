@@ -358,16 +358,16 @@ class QuoteHandler (webapp.RequestHandler):
     template_file = os.path.join(os.path.dirname(__file__), 'templates/singlequote.html')
     self.response.out.write(template.render(template_file, template_values))
 
+application = webapp.WSGIApplication(
+    [
+        ('/', MainHandler),
+        ('/vote/', VoteHandler),
+        ('/recent/', RecentHandler),
+        ('/quote/(.*)', QuoteHandler),
+        ('/feed/(recent|popular)/', FeedHandler),
+    ], debug=True)
 
 def main():
-  application = webapp.WSGIApplication(
-      [
-          ('/', MainHandler),
-          ('/vote/', VoteHandler),
-          ('/recent/', RecentHandler),
-          ('/quote/(.*)', QuoteHandler),
-          ('/feed/(recent|popular)/', FeedHandler),
-      ], debug=True)
   wsgiref.handlers.CGIHandler().run(application)
 
 if __name__ == '__main__':
