@@ -112,10 +112,10 @@ class SuggestionHandler(webapp.RequestHandler):
   
   @login_required
   def get(self):
-    offset = self.request.get('offset')
+    bookmark = self.request.get('bookmark')
     next = None
-    if offset:
-      suggestions = Suggestion.gql('WHERE when <= :offset ORDER BY when DESC', offset=offset).fetch(PAGESIZE+1)
+    if bookmark:
+      suggestions = Suggestion.gql('WHERE when <= :bookmark ORDER BY when DESC', bookmark=bookmark).fetch(PAGESIZE+1)
     else:
       suggestions = Suggestion.gql('ORDER BY when DESC').fetch(PAGESIZE+1)
     if len(suggestions) == PAGESIZE+1:

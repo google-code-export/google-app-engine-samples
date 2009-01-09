@@ -42,7 +42,7 @@ from time import mktime
 PAGESIZE = 5  
 
 
-class Suggestion2(db.Model):
+class SuggestionByKey(db.Model):
   """
   A suggestion in the suggestion box, which we want to display
   in the order they were created.
@@ -86,7 +86,7 @@ def decodebookmark(b64bookmark):
   return created, key
 
   
-class Suggestion2Handler(webapp.RequestHandler):
+class SuggestionByKeyHandler(webapp.RequestHandler):
   """
   Handles the creation of a single Suggestion, and the display
   of suggestions broken into PAGESIZE pages.
@@ -94,22 +94,22 @@ class Suggestion2Handler(webapp.RequestHandler):
 
   @login_required
   def get(self):
-    offset = self.request.get('offset')
+    bookmark = self.request.get('bookmark')
     next = None
-    if offset:
-      created, key = decodebookmark(offset)
+    if bookmark:
+      created, key = decodebookmark(bookmark)
       logging.info('key = %s, created = %s' % (key, created))
-      suggestions = Suggestion2.gql(' WHERE created = :created AND __key__ >= :key ORDER BY __key__ ASC', created = created, key = db.Key(key)).fetch(PAGESIZE+1) 
+      suggestions = SuggestionByKey.gql(' WHERE created = :created AND __key__ >= :key ORDER BY __key__ ASC', created = created, key = db.Key(key)).fetch(PAGESIZE+1) 
       logging.info(type(suggestions))
       if len(suggestions) < (PAGESIZE + 1):
         logging.info('Going for more entities since we only got %d' % len(suggestions))
         remainder = PAGESIZE + 1 - len(suggestions)
-        moresuggestions = Suggestion2.gql('WHERE created < :created ORDER BY created DESC, __key__ ASC', created = created).fetch(remainder)
+        moresuggestions = SuggestionByKey.gql('WHERE created < :created ORDER BY created DESC, __key__ ASC', created = created).fetch(remainder)
         logging.info('Got %d more' % len(moresuggestions))
         suggestions += moresuggestions
         logging.info('For a total of %d entities' % len(suggestions))
     else:
-      suggestions = Suggestion2.gql('ORDER BY created DESC, __key__ ASC').fetch(PAGESIZE+1)
+      suggestions = SuggestionByKey.gql('ORDER BY created DESC, __key__ ASC').fetch(PAGESIZE+1)
     if len(suggestions) == PAGESIZE+1:
       next = encodebookmark(suggestions[-1].created, suggestions[-1].key())
       suggestions = suggestions[:PAGESIZE]
@@ -119,12 +119,12 @@ class Suggestion2Handler(webapp.RequestHandler):
     self.response.out.write(template.render(template_file, template_values))
 
   def post(self):
-    s = Suggestion2(suggestion = self.request.get('suggestion'))        
+    s = SuggestionByKey(suggestion = self.request.get('suggestion'))        
     s.put()
     self.redirect('/key/')
 
     
-class Suggestion2Populate(webapp.RequestHandler):
+class SuggestionByKeyPopulate(webapp.RequestHandler):
   """
   Handles populating the datastore with some sample
   Suggestions to see how the paging works.
@@ -132,15 +132,15 @@ class Suggestion2Populate(webapp.RequestHandler):
   def post(self):
     now = datetime.datetime.now()
     for i in range(6):
-      s = Suggestion2(suggestion = 'Suggestion %d' % i, created = now)
+      s = SuggestionByKey(suggestion = 'Suggestion %d' % i, created = now)
       s.put()
     self.redirect('/key/')
         
 
 def main():
   application = webapp.WSGIApplication([
-    ('/key/pop/', Suggestion2Populate),
-    ('/key/', Suggestion2Handler)
+    ('/key/pop/', SuggestionByKeyPopulate),
+    ('/key/', SuggestionByKeyHandler)
   ], debug=True)
   wsgiref.handlers.CGIHandler().run(application)
 
