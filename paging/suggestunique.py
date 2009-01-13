@@ -115,7 +115,9 @@ class SuggestionHandler(webapp.RequestHandler):
     bookmark = self.request.get('bookmark')
     next = None
     if bookmark:
-      suggestions = Suggestion.gql('WHERE when <= :bookmark ORDER BY when DESC', bookmark=bookmark).fetch(PAGESIZE+1)
+      query = Suggestion.gql('WHERE when <= :bookmark ORDER BY when DESC', 
+        bookmark=bookmark)
+      suggestions = query.fetch(PAGESIZE+1)
     else:
       suggestions = Suggestion.gql('ORDER BY when DESC').fetch(PAGESIZE+1)
     if len(suggestions) == PAGESIZE+1:
@@ -129,7 +131,10 @@ class SuggestionHandler(webapp.RequestHandler):
   def post(self):
     now = datetime.datetime.now()
     when = whenfromcreated(now)
-    s = Suggestion(suggestion = self.request.get('suggestion'), when=when, created=now)        
+    s = Suggestion(
+      suggestion = self.request.get('suggestion'), 
+      when=when, 
+      created=now)        
     s.put()
 
     self.redirect('/unique/')
@@ -139,7 +144,10 @@ class SuggestionPopulate(webapp.RequestHandler):
   def post(self):
     now = datetime.datetime.now()
     for i in range(6):
-      s = Suggestion(suggestion = 'Suggestion %d' % i, created = now, when = whenfromcreated(now))
+      s = Suggestion(
+        suggestion = 'Suggestion %d' % i, 
+        created = now, 
+        when = whenfromcreated(now))
       s.put()
 
     self.redirect('/unique/')       

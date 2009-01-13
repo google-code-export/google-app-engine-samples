@@ -99,17 +99,24 @@ class SuggestionByKeyHandler(webapp.RequestHandler):
     if bookmark:
       created, key = decodebookmark(bookmark)
       logging.info('key = %s, created = %s' % (key, created))
-      suggestions = SuggestionByKey.gql(' WHERE created = :created AND __key__ >= :key ORDER BY __key__ ASC', created = created, key = db.Key(key)).fetch(PAGESIZE+1) 
+      query = SuggestionByKey.gql(
+        ' WHERE created = :created AND __key__ >= :key ORDER BY __key__ ASC', 
+        created = created, key = db.Key(key))
+      suggestions = query.fetch(PAGESIZE+1) 
       logging.info(type(suggestions))
       if len(suggestions) < (PAGESIZE + 1):
         logging.info('Going for more entities since we only got %d' % len(suggestions))
         remainder = PAGESIZE + 1 - len(suggestions)
-        moresuggestions = SuggestionByKey.gql('WHERE created < :created ORDER BY created DESC, __key__ ASC', created = created).fetch(remainder)
+        query = SuggestionByKey.gql(
+          'WHERE created < :created ORDER BY created DESC, __key__ ASC', 
+          created = created)
+        moresuggestions = query.fetch(remainder)
         logging.info('Got %d more' % len(moresuggestions))
         suggestions += moresuggestions
         logging.info('For a total of %d entities' % len(suggestions))
     else:
-      suggestions = SuggestionByKey.gql('ORDER BY created DESC, __key__ ASC').fetch(PAGESIZE+1)
+      query = SuggestionByKey.gql('ORDER BY created DESC, __key__ ASC')
+      suggestions = query.fetch(PAGESIZE+1)
     if len(suggestions) == PAGESIZE+1:
       next = encodebookmark(suggestions[-1].created, suggestions[-1].key())
       suggestions = suggestions[:PAGESIZE]
