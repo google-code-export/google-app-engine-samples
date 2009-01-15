@@ -20,11 +20,11 @@ from google.appengine.api import mail
 from google.appengine.api import users
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
+from google.appengine.ext.webapp.util import run_wsgi_app
 import cgi
 import logging
 import os
 import sys
-import wsgiref.handlers
 
 _DEBUG = True
 
@@ -219,7 +219,7 @@ _URLS = (
 
 def main(argv):
   application = webapp.WSGIApplication(_URLS)
-  wsgiref.handlers.CGIHandler().run(application)
+  run_wsgi_app(application)
 
 
 if __name__ == '__main__':
