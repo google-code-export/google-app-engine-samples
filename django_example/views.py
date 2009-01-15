@@ -58,11 +58,11 @@ def respond(request, user, template, params=None):
     params = {}
   if user:
     params['user'] = user
-    params['sign_out'] = users.CreateLogoutURL('/')
-    params['is_admin'] = (users.IsCurrentUserAdmin() and
+    params['sign_out'] = users.create_logout_url('/')
+    params['is_admin'] = (users.is_current_user_admin() and
                           'Dev' in os.getenv('SERVER_SOFTWARE'))
   else:
-    params['sign_in'] = users.CreateLoginURL(request.path)
+    params['sign_in'] = users.create_login_url(request.path)
   if not template.endswith('.html'):
     template += '.html'
   return shortcuts.render_to_response(template, params)
@@ -70,13 +70,13 @@ def respond(request, user, template, params=None):
 
 def index(request):
   """Request / -- show all gifts."""
-  user = users.GetCurrentUser()
+  user = users.get_current_user()
   gifts = db.GqlQuery('SELECT * FROM Gift ORDER BY created DESC')
   return respond(request, user, 'list', {'gifts': gifts})
 
 def edit(request, gift_id):
   """Create or edit a gift.  GET shows a blank form, POST processes it."""
-  user = users.GetCurrentUser()
+  user = users.get_current_user()
   if user is None:
     return http.HttpResponseForbidden('You must be signed in to add or edit a gift')
 
