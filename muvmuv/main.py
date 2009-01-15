@@ -7,23 +7,32 @@ import math
 
 import simplejson
 
-from elementtree.ElementTree import *
+# Different versions of ElementTree can exist in different locations depending
+# on the installed Python version.
+try:
+  from xml.etree.cElementTree import *
+except ImportError:
+  try:
+    from xml.etree.ElementTree import *
+  except ImportError:
+    from elementtree.ElementTree import *
 
 from google.appengine.api import urlfetch
 from google.appengine.api import users
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
+from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext import db
-import wsgiref.handlers
 
 MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+
 
 class MainPage(webapp.RequestHandler):
   def get(self):
 
-    user = users.GetCurrentUser()
-    login = users.CreateLoginURL(self.request.uri)
-    logout = users.CreateLogoutURL(self.request.uri)
+    user = users.get_current_user()
+    login = users.create_login_url(self.request.uri)
+    logout = users.create_logout_url(self.request.uri)
 
     template_file_name = 'mainpage.html'
     template_values = {'login': login, 'logout': logout, 'user': user}
@@ -31,11 +40,12 @@ class MainPage(webapp.RequestHandler):
     path = os.path.join(os.path.dirname(__file__), template_file_name)
     self.response.out.write(template.render(path, template_values))
 
+
 class ReviewPage(webapp.RequestHandler):
   def get(self):
-    user = users.GetCurrentUser()
-    login = users.CreateLoginURL(self.request.uri)
-    logout = users.CreateLogoutURL(self.request.uri)
+    user = users.get_current_user()
+    login = users.create_login_url(self.request.uri)
+    logout = users.create_logout_url(self.request.uri)
 
     template_file_name = 'reviewpage.html'
     template_values = {'login': login, 'logout': logout, 'user': user}
@@ -54,9 +64,10 @@ class SubmitReview(webapp.RequestHandler):
     movie_review.comment = json['reviewComment']
     movie_review.title = json['title']
     movie_review.movie = getMovie(movie_review.title)
-    movie_review.author = users.GetCurrentUser()
+    movie_review.author = users.get_current_user()
 
     movie_review.put() 
+
 
 class Movie(db.Model):
   title = db.StringProperty()
@@ -68,12 +79,14 @@ class Movie(db.Model):
   rating_average = db.FloatProperty(default=0.0)
   rating_count = db.IntegerProperty(default=0)
 
+
 class MovieReview(db.Model):
   title = db.StringProperty()
   movie = db.Reference(Movie)
   author = db.UserProperty()
   comment = db.TextProperty()
   date = db.DateTimeProperty(auto_now_add=True)
+
 
 class GetImage(webapp.RequestHandler):
   
@@ -89,6 +102,7 @@ class GetImage(webapp.RequestHandler):
     else:
      self.redirect('/static/noimage.jpg')
 
+
 class SetRating(webapp.RequestHandler):
   def post(self):
     title =self.request.get('title')
@@ -98,6 +112,7 @@ class SetRating(webapp.RequestHandler):
       rating) / (movie.rating_count + 1)
     movie.rating_count = movie.rating_count + 1
     movie.put()
+
 
 class GetReviewsJson(webapp.RequestHandler):
   def get(self):
@@ -132,6 +147,7 @@ class GetReviewsJson(webapp.RequestHandler):
 
     self.response.headers['Content-Type'] = 'text/javascript'
     self.response.out.write(json_str)
+
 
 class GetMoviesJson(webapp.RequestHandler):
   def get(self):
@@ -186,6 +202,7 @@ def getMovie(title):
     return result[0]
   else:
     return None
+
 
 class DeleteAll(webapp.RequestHandler):
   def get(self):
@@ -290,6 +307,7 @@ class Build(webapp.RequestHandler):
 
     return movies
 
+
 class Test(webapp.RequestHandler):
   def get(self):
     title = self.request.get('title')
@@ -317,4 +335,11 @@ apps_binding.append(('/build', Build))
 apps_binding.append(('/rating', SetRating))
 
 application = webapp.WSGIApplication(apps_binding, debug=True)
-wsgiref.handlers.CGIHandler().run(application)
+
+
+def main():
+  run_wsgi_app(application)
+
+
+if __name__ == '__main__':
+  main()
