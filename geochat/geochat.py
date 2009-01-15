@@ -28,16 +28,17 @@ import datetime
 import logging
 import os
 import time
-import wsgiref.handlers
 
 from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
+from google.appengine.ext.webapp.util import run_wsgi_app
 
 import datamodel
 import json
 import settings
+
 
 class MainHandler(webapp.RequestHandler):
   
@@ -142,6 +143,7 @@ class SettingsHandler(webapp.RequestHandler):
       
     self.redirect('/')
     
+    
 class HelpHandler(webapp.RequestHandler):
   
   """Handles requests to /help
@@ -174,14 +176,10 @@ class HelpHandler(webapp.RequestHandler):
 
 
 if __name__ == '__main__':
-  application = webapp.WSGIApplication(
-      [
-        ('/', MainHandler),
-        ('/settings', SettingsHandler),
-        ('/help', HelpHandler),
-      ],
-      debug = True)
+  application = webapp.WSGIApplication([('/', MainHandler),
+                                        ('/settings', SettingsHandler),
+                                        ('/help', HelpHandler),], debug = True)
 
-  wsgiref.handlers.CGIHandler().run(application)
+  run_wsgi_app(application)
 
 
