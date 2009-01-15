@@ -101,7 +101,7 @@ def whenfromcreated(created):
     A unique value that will be ordered by 
     entity creation time.
   """
-  return created.isoformat()[0:19] + '|' + _unique_user(users.GetCurrentUser())
+  return created.isoformat()[0:19] + '|' + _unique_user(users.get_current_user())
 
 
 class SuggestionHandler(webapp.RequestHandler):
