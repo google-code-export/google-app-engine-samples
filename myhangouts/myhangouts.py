@@ -30,18 +30,18 @@ import os
 import logging
 import datetime
 import simplejson
-import wsgiref.handlers
 
 from google.appengine.api import datastore
 from google.appengine.api import users
 from google.appengine.ext import webapp
+from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext.webapp import template
 
 # Renders the main template.
 class MainPage(webapp.RequestHandler):
   def get(self):
     query = datastore.Query('User')
-    current_user = users.GetCurrentUser()
+    current_user = users.get_current_user()
     user_list = {}
     for user in query.Get(100):
       user_list[user['user'].email()] = user['user']
@@ -59,8 +59,8 @@ class MainPage(webapp.RequestHandler):
       'users': user_list.values(),
       'current_user': current_user,
       'display_user': display_user,
-      'login_url': users.CreateLoginURL(self.request.uri),
-      'logout_url': users.CreateLogoutURL(self.request.uri),
+      'login_url': users.create_login_url(self.request.uri),
+      'logout_url': users.create_logout_url(self.request.uri),
     }
     path = os.path.join(os.path.dirname(__file__), "myhangouts.html")
     self.response.out.write(template.render(path, template_values))
@@ -85,7 +85,7 @@ class RPCHandler(webapp.RequestHandler):
   # The RPCs exported to JavaScript follow here:
 
   def AddLocation(self, latd, longd, name):
-    user = users.GetCurrentUser()
+    user = users.get_current_user()
     query = datastore.Query('User')
     query['user ='] = user
     if (query.Count() == 0):
@@ -112,7 +112,7 @@ class RPCHandler(webapp.RequestHandler):
     if user_email:
       user = users.User(user_email)
     else:
-      user = users.GetCurrentUser()
+      user = users.get_current_user()
     query = datastore.Query('Location')
     if not user:
       return []
@@ -131,7 +131,7 @@ def main():
     ('/', MainPage),
     ('/rpc', RPCHandler),
     ], debug=True)
-  wsgiref.handlers.CGIHandler().run(application)
+  run_wsgi_app(application)
 
 if __name__ == '__main__':
   main()
