@@ -26,7 +26,6 @@ import os
 import random
 import string
 import sys
-import wsgiref.handlers
 
 
 from google.appengine.api import users

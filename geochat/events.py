@@ -35,7 +35,6 @@ import settings
 import logging
 import os
 import time
-import wsgiref.handlers
 
 import datamodel
 import json
@@ -44,6 +43,7 @@ import settings
 from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext import webapp
+from google.appengine.ext.webapp.util import run_wsgi_app
 
 # The time interval between syncs as a timedelta.
 sync_interval = datetime.timedelta(0, 10)
@@ -229,7 +229,7 @@ def main():
         ('/event/move', MoveHandler),
       ],
       debug = True)
-  wsgiref.handlers.CGIHandler().run(application)
+  run_wsgi_app(application)
 
 if __name__ == '__main__':
   main()
