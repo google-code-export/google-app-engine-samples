@@ -174,7 +174,7 @@ class PostMail(webapp.RequestHandler):
                                   subject='A Secret Valentine!')
 
       # Report who really sent the email.
-      user = users.GetCurrentUser()
+      user = users.get_current_user()
       values['nickname'] = user.nickname()
       values['user_email'] = user.email()
       message.reply_to = user.email()
