@@ -26,7 +26,7 @@ from google.appengine.ext import db
 from google.appengine.api import memcache
 from google.appengine.api import users
 
-PAGE_SIZE = 5
+PAGE_SIZE = 20
 DAY_SCALE = 4
 
 
