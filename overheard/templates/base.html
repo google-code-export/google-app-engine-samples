@@ -13,14 +13,15 @@
         line-height: 1.1em;
         font-family: Helvetica, FreeSans, Arial, 'Bitstream Vera Sans', sans-serif;
       }
-      .login { text-align: right; clear: both; color: black }
-      h1 { padding: 0.2em 0; }
+      .login { text-align: right; clear: both; color: black; padding-top: 0.2em; }
+      h1 { display: inline; font-size: 16pt; }
       h1 a { color: white }
       h2 { padding-left: 1em }
-      .titlebar { color: white; background: black; padding-left: 1em; }
-      .tidbits {  margin-left: 3em;  }
-      .tidbit { padding: 2em;  }
+      .titlebar { color: white; background: black; padding: 0.5em 0.5em 0 0.5em; }
+      .tidbits {  margin-left: 1em;  }
+      .tidbit { padding: 1em;  }
       .tidbit a { color: black }
+      .tabs { padding-top: 0.8em; }
       .submit_tidbit { margin: 2em; }
       .submit_tidbit p { padding: 0.2em; }
       .votecontrols { float: left }
@@ -29,15 +30,15 @@
       .error { color: red; font-weight: bold }
       .gamehint { display: none; background: yellow; color: black; }
       .next { padding-left: 3em; padding-top: 1em; }
-      .nav { margin-left: 2em; margin-right: -1em;  }
+      .nav { margin-left: 0.5em; margin-right: -0.2em; }
       .nav a { color: white; padding: 0.3em; border: solid white 2px; text-decoration: none; }
       .{{ section }} a { color: black; background: white; font-weight: bold }
       .voteup, .votedown { vertical-align: middle; cursor: pointer }
-      .index { padding-right: 1em; }
-      .quote { width: 100%; padding: 1em }
+      .index { padding-right: 0.5em; }
+      .quote { width: 100%; padding: 0.5em }
       .quoteinfo { padding: 1em; padding-left: 2em; }
       .quoteinfo th { text-align: right }
-      .quoteinfo th, .quoteinfo td { padding: 0.5em }
+      .quoteinfo th, .quoteinfo td { padding: 0.4em }
       .loginwarning { font-weight: bold; background: yellow; display: none; padding-left: 2em; }
     </style>  
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.2.6/jquery.js"></script>
@@ -48,10 +49,11 @@
   <body>
 
     <div class="titlebar" >
-    <h1><a href="/">Overheard</a></h1> 
-    <p>Funny quotes you've heard 
-       <span class="nav Popular"><a href="/">popular</a></span> 
-       <span class="nav Recent"><a href="/recent/">recent</a></span></p>
+       <h1><a href="/">Overheard</a></h1> Funny quotes you've heard 
+       <p class="tabs">
+         <span class="nav Popular"><a href="/">popular</a></span> 
+         <span class="nav Recent"><a href="/recent/">recent</a></span>
+       </p>
     </div>
     <div class="login" >
       {{ greeting }} <br/>
