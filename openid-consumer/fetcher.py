@@ -54,6 +54,9 @@ class UrlfetchFetcher(fetchers.HTTPFetcher):
     if not fetchers._allowedURL(url):
       raise ValueError('Bad URL scheme: %r' % (url,))
 
+    if not headers:
+      headers = {}
+
     if body:
       method = urlfetch.POST
       if 'Content-Type' not in headers:
