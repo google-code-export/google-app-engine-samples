@@ -227,7 +227,7 @@ def set_vote(quote_id, user, newvote):
     quote.votesum = quote.votesum - vote.vote + newvote
     vote.vote = newvote
     # See the docstring of main.py for an explanation of
-    # the following formulas.
+    # the following formula.
     quote.rank = "%020d|%s" % (
       long(quote.created * DAY_SCALE + quote.votesum), 
       quote.creation_order

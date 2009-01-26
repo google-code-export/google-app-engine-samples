@@ -75,6 +75,7 @@ Decay:
    
 """
 
+import cgi
 import logging
 import os
 import urlparse
@@ -108,7 +109,7 @@ def get_greeting():
   progress_msg = 'You get one star just for showing up.'
   if user:
     greeting = ('%s (<a class="loggedin" href="%s">sign out</a>)' % 
-        (user.nickname(), users.create_logout_url('/')))
+        (user.nickname(), cgi.escape(users.create_logout_url('/'))))
     progress_id = 3
     progress_msg = 'One more star for logging in.'
     has_voted, has_added_quote = models.get_progress(user)    
@@ -120,7 +121,7 @@ def get_greeting():
       progress_msg = ""      
   else:
     greeting = ("""<a  href=\"%s\">Sign in to vote or add 
-        your own quote</a>.""" % users.create_login_url("/"))    
+        your own quote</a>.""" % cgi.escape(users.create_login_url("/")))
   return (progress_id, progress_msg, greeting)
 
 
