@@ -6,10 +6,6 @@
 {% block body %}
 <body>
 <p>
-<span class="warning">Warning: this sometimes breaks when deployed on
-appspot.com. We're investigating, but it's low priority right now.</span>
-</p>
-<p>
 <a href="{{ oidrequest.trust_root }}">{{ oidrequest.trust_root }}</a>
 has asked for your identity. Do you want to respond with your nickname
 <span class="nickname">{{ user.nickname }}</span>?
