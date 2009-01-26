@@ -228,11 +228,8 @@ def set_vote(quote_id, user, newvote):
     vote.vote = newvote
     # See the docstring of main.py for an explanation of
     # the following formulas.
-    votesum = quote.votesum
-    if votesum < 1:
-      votesum = 1.0/(2-votesum)
     quote.rank = "%020d|%s" % (
-      long(quote.created * DAY_SCALE * votesum), 
+      long(quote.created * DAY_SCALE + quote.votesum), 
       quote.creation_order
       )
     db.put([vote, quote])

@@ -39,16 +39,12 @@ Decay:
   The ranking algorithm will make use of integer properties being 64-bits. The 
   rank for each quote is calculated as:
 
-     rank = created * DAY_SCALE * votesum
+     rank = created * DAY_SCALE + votesum
 
   created    = Number of days after 10/1/2008 that the quote created.
   DAY_SCALE  = This is a constant that determines how quickly votes 
                should decay (defaults to 4).
   votesum    = Sum of all +1 and -1 votes for a quote.
-
-  We'll allocate 24 bits for 'created' and 5 bits for DAY_SCALE and 24 bits for votesum.
-
-  Size of 'rank' = 24+5+24 = 53 bits which sits comfortably inside a 64-bit long.
 
   Does this work? Presume the following scenario:
 
@@ -73,24 +69,10 @@ Decay:
    q2       (3) + (1) = 2 * 4 * 4 = 32
    q3             (5) = 3 * 4 * 5 = 60      
 
-
-  Preserving 24 bits for votes means that a quote could get 
-  up to ~16,000,000 votes. Preserving 24 bits for 'created' means that 
-  this system will work for ~16,000,000 days, or ~45,000 years.
-
   Note that ties are possible, which means that rank for quotes will have 
   to be disambiguated since the application allows paging of ranked quotes.
 
-  Votes can go negative, which would drive it very far down in the rankings
-  if the above formula was used. To fix that, we instead use the formula
-  below when votesum is less than 1:
-
-        rank = created * DAY_SCALE * 1/(2-votesum)   
-        
-  This causes the rank to approach zero as
-  votesum goes further negative, but the rank will never go 
-  below zero.
-    
+   
 """
 
 import logging

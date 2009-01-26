@@ -135,8 +135,8 @@ class TestModel(unittest.TestCase):
     
     # Day 1 -  [quote 0 and 1 are added on Day 1 and
     #            get 5 and 3 votes respectively. Rank is q0, q1.]
-    # q0 (5) = 1 * 4 * 5 = 20
-    # q1 (3) = 1 * 4 * 3 = 12
+    # q0 (5) = 1 * 4 + 5 = 9 
+    # q1 (3) = 1 * 4 + 3 = 7 
 
     quoteid0 = models.add_quote('This is a test.', user, _created=1)
     quoteid1 = models.add_quote('This is a test.', user, _created=1)    
@@ -155,9 +155,9 @@ class TestModel(unittest.TestCase):
     self.assertEqual(quotes[0].key().id(), quoteid0)
     self.assertEqual(quotes[1].key().id(), quoteid1)
 
-    # q0 (5) + (3) = 1 * 4 * 8 = 32
-    # q1 (3) + (0) = 1 * 4 * 3 = 12
-    # q2       (3) = 2 * 4 * 3 = 24
+    # q0 (5) + (3) = 1 * 4 + 8 = 12
+    # q1 (3) + (0) = 1 * 4 + 3 = 7 
+    # q2       (3) = 2 * 4 + 3 = 11
     quoteid2 = models.add_quote('This is a test.', user, _created=2)
 
     models.set_vote(quoteid0, user, 8)
@@ -170,16 +170,16 @@ class TestModel(unittest.TestCase):
     self.assertEqual(quotes[2].key().id(), quoteid1)
 
 
-    # q0 (5) + (3)       = 1 * 4 * 8 = 32
-    # q1 (3) + (0)       = 1 * 4 * 3 = 12
-    # q2       (3) + (1) = 2 * 4 * 4 = 32
-    # q3             (5) = 3 * 4 * 5 = 60      
+    # q0 (5) + (3)       = 1 * 4 + 8 = 12 
+    # q1 (3) + (0)       = 1 * 4 + 3 = 7
+    # q2       (3) + (2) = 2 * 5 + 4 = 14
+    # q3             (5) = 3 * 4 + 5 = 17      
 
     quoteid3 = models.add_quote('This is a test.', user, _created=3)
 
     models.set_vote(quoteid0, user, 8)
     models.set_vote(quoteid1, user, 3)
-    models.set_vote(quoteid2, user, 4)
+    models.set_vote(quoteid2, user, 5)
     models.set_vote(quoteid3, user, 5)
     quotes, next = models.get_quotes()
     
@@ -189,18 +189,19 @@ class TestModel(unittest.TestCase):
     self.assertEqual(quotes[3].key().id(), quoteid1)
 
 
-    # q0 (5) + (3)       = 1 * 4 * 8   = 32
-    # q1 (3) + (0)       = 1 * 4 * 3   = 12
-    # q2       (3) + (1) = 2 * 4 * 4   = 32
-    # q3             (0) = 3 * 4 * 1/2 = 6      
+    # q0 (5) + (3) + (1) = 1 * 4 + 9 = 13
+    # q1 (3) + (0)       = 1 * 4 + 3 = 7 
+    # q2       (3) + (2) = 2 * 5 + 4 = 14
+    # q3             (0) = 3 * 4 + 0 = 12      
 
+    models.set_vote(quoteid0, user, 9)
     models.set_vote(quoteid3, user, 0)
     quotes, next = models.get_quotes()
 
     self.assertEqual(quotes[0].key().id(), quoteid2)
     self.assertEqual(quotes[1].key().id(), quoteid0)
-    self.assertEqual(quotes[2].key().id(), quoteid1)
-    self.assertEqual(quotes[3].key().id(), quoteid3)
+    self.assertEqual(quotes[2].key().id(), quoteid3)
+    self.assertEqual(quotes[3].key().id(), quoteid1)
 
     models.del_quote(quoteid0, user)
     models.del_quote(quoteid1, user)
