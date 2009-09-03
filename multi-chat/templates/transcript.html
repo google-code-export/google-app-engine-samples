@@ -1,0 +1,63 @@
+<html>
+  <head>
+    <title>Transcript: #{{ channel }}</title>
+    <style type="text/css">
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      table#transcript {
+        border-collapse: collapse;
+      }
+      #transcript tr.odd {
+        background: #fdd;
+      }
+      #transcript tr.even {
+        background: #dfd;
+      }
+      #transcript td.new-date {
+        background: #eee;
+        text-align: center;
+      }
+      #transcript td {
+        padding: 0 0.5em;
+      }
+      #transcript .timestamp {
+        font-size: smaller;
+        width: 9em;
+      }
+      #transcript .user {
+        font-family: monospace;
+      }
+    </style>
+  </head>
+  <body>
+    {% include "header.html" %}
+
+    <h1>Transcript for #{{ channel }}</h1>
+
+    {% include "transcript-navigation.html" %}
+
+    <table id="transcript">
+      {% for log in logs %}
+      <!-- We assume this is for only one channel -->
+      {% ifchanged log.timestamp.date %}
+        <!-- New date: insert a separator -->
+        <tr>
+          <td class="new-date" colspan="3">
+            {{ log.timestamp|date:"Y-m-d" }}
+          </td>
+        </tr>
+      {% endifchanged %}
+      <tr class="{% cycle odd,even %}">
+        <td class="timestamp">{{ log.timestamp|date:"H:i:s O" }}</td>
+        <td class="user">{% if not log.system %}{{ log.user }}{% endif %}</td>
+        <td class="body">{{ log.body|escape }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+
+    {% include "transcript-navigation.html" %}
+
+    {% include "footer.html" %}
+  </body>
+</html>

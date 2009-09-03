@@ -1,0 +1,17 @@
+indexes:
+
+- kind: Log
+  properties:
+  - name: channel
+  - name: timestamp
+    direction: desc
+
+- kind: Log
+  properties:
+  - name: channel
+  - name: timestamp
+
+- kind: Person
+  properties:
+  - name: channel
+  - name: __key__

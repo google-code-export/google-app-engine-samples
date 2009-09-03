@@ -1,0 +1,22 @@
+<html>
+  <head>
+    <title>Channels</title>
+  </head>
+  <body>
+    {% include "header.html" %}
+
+    <h1>Channels</h1>
+    <p>
+      Most populated {{ max }} channel{{ max|pluralize }}:
+    </p>
+    <ul>
+      {% for channel in channels %}
+      <li><a href="/transcript/transcript?channel={{ channel.name }}">{{ channel }}</a>
+      ({{ channel.num_members }} member{{ channel.num_members|pluralize }})
+      </li>
+      {% endfor %}
+    </ul>
+
+    {% include "footer.html" %}
+  </body>
+</html>

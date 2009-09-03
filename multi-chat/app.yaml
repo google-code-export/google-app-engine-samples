@@ -1,0 +1,18 @@
+application: multi-chat
+version: 1
+runtime: python
+api_version: 1
+
+inbound_services:
+- xmpp_message
+
+handlers:
+- url: /?
+  script: controllers/index.py
+- url: /_ah/xmpp/message/chat/
+  script: controllers/xmpp.py
+- url: /(transcript)/.*
+  script: controllers/\1.py
+- url: /(task)/.*
+  script: controllers/\1.py
+  login: admin

@@ -1,0 +1,10 @@
+<!-- transcript navigation -->
+<p>
+{% if first_time %}
+<a href="?channel={{ channel }}&end_time={{ first_time }}">Previous</a>
+{% endif %}
+&nbsp;
+{% if last_time %}
+<a href="?channel={{ channel }}&start_time={{ last_time }}">Next</a>
+{% endif %}
+</p>

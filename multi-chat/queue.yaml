@@ -1,0 +1,5 @@
+queue:
+- name: chats
+  rate: 3/s
+- name: stats
+  rate: 1/s
