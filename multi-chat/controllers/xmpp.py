@@ -200,7 +200,7 @@ class XmppController(xmpp_handlers.CommandHandler):
       return
     # Broadcast to everyone in the channel.
     txt = '%s *** %s %s' % (self.person.channel, self.person, msg.arg)
-    self.Broadcast(self.person.channel, msg)
+    self.Broadcast(self.person.channel, msg.body)
     self.Log(self.person.channel, msg.body)
 
   def text_message(self, msg):
