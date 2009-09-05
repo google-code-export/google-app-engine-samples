@@ -41,14 +41,19 @@ class TaskController(webapp.RequestHandler):
     if start_at:
       q.filter('__key__ >', db.Key(start_at))
     people = q.fetch(self._BROADCAST_BATCH)
-    if not people:
-      return
     jids = []
     for p in people:
       if skip_person == p:
         continue
       jids.append(p.jid())
-    xmpp.send_message(jids, message)
+    if not jids:
+      return
+    try:
+      xmpp.send_message(jids, message)
+    except xmpp.InvalidJidError:
+      logging.error('InvalidJidError caught. JIDs were [%s]',
+          ', '.join(['"%s"' % x for x in jids]))
+      raise
 
     # Add a task for the next batch.
     params = {
