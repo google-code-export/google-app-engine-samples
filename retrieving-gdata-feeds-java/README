@@ -1,0 +1,23 @@
+google-app-engine-samples -- retrieving-gdata-feeds-java
+
+retrieving-gdata-feeds-java is a simple Java web application demonstrating how
+to access private Google Data feeds using Google's AuthSub authentication
+interface.
+
+This application is packaged as a Google App Engine application. To run it,
+follow these steps:
+
+1. If you haven't already, download the latest Google App Engine SDK for Java
+   from http://code.google.com/appengine/downloads.html and unzip it.
+2. Modify the second line of the build.xml file, updating the sdk.dir property
+   to point to the location of your downloaded SDK.
+3. To run the application on the App Engine development server, open a new
+   command line window, navigate to the ThirdLeg directory, and execute
+   'ant runserver' -- now access your app at http://localhost:8080/.
+4. To deploy the application to App Engine's production environment, register a
+   new application ID at http://appengine.google.com, add this new ID between
+   the <application></application> tags in war/WEB-INF/appengine-web.xml, and
+   execute 'ant update' from the command line. Note that you may need to use
+   the SDK's appcfg.cmd utility to input your account credentials before you
+   can use this particular ant target -- see
+   http://code.google.com/appengine/docs/java/tools/uploadinganapp.html.
