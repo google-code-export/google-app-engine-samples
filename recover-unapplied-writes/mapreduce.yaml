@@ -1,0 +1,10 @@
+# Sample mapreduce configuration for applying unapplied writes.
+#
+mapreduce:
+- name: "Apply Unapplied Entity Writes"
+  mapper:
+    input_reader: mapreduce.input_readers.DatastoreInputReader
+    handler: apply_unapplied_writes.apply_model_instance
+    params:
+     - name: entity_kind
+
