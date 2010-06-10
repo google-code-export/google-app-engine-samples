@@ -16,7 +16,7 @@ Sample usage using remote_api:
     (see http://code.google.com/appengine/articles/remote_api.html )
   * Change to a directory where this module exists.
   * Run remote_api_shell.py $YOURAPPID
-  * In the remove_api_shell, run the following:
+  * In the remote_api_shell, run the following:
     import apply_unapplied_writes
     apply_unapplied_writes.apply_entity_by_name(YOURKIND, A KEY NAME OR ID)
 
@@ -39,15 +39,13 @@ Sample usage using the map reduce framework:
   * Click Launch Job.
 """
 
-__author__ = 'mblain@google.com (Matthew Blain)'
-
 import logging
 from google.appengine.api import datastore
 
 
-
 UNAPPLIED_WRITE_KIND_PREFIX = '__unapplied_write__'
 UNAPPLIED_WRITE_KIND_PREFIX_LEN = len(UNAPPLIED_WRITE_KIND_PREFIX)
+
 
 def apply_entity(unapplied_entity, delete_unapplied_entity=True):
   """Re-write an entity representing an unapplied write  to apply it.

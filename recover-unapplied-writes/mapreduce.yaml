@@ -7,4 +7,5 @@ mapreduce:
     handler: apply_unapplied_writes.apply_model_instance
     params:
      - name: entity_kind
+       default: models.__unapplied_write__MyModel
 
