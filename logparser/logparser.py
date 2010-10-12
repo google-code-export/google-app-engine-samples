@@ -19,7 +19,7 @@
 
 Example:
 
-  # Download request logs into requests.txt
+  # Download request logs (with applogs) into requests.txt
   appcfg.py request_logs --severity 0 --include_all <appdirectory> requests.txt
   # Run the logparser to insert them into requests.db.
   # (You can specify multiple input files.)
@@ -92,12 +92,6 @@ Contents of the Database Table:
   The first (applog) combines all severity levels; the others include only that
   one severity level to allow for precise queries.
 
-  If --discard_duplicates is specified, the entire request log line is stored
-  in "request_log", as primary key. This allows you to run this tool multiple
-  times over several files to combine them--it'll only record the first one
-  seen. However, you may lose legitimate duplicate records; adding --include_all
-  will reduce the chance of legitimate duplicates occuring.
-
   * http://httpd.apache.org/docs/1.3/mod/mod_log_config.html#formats
   The above format is the particular format one which App Engine outputs. This
   log parser is not a general parser.
@@ -126,6 +120,24 @@ Custom Columns:
 
   You can specify multiple --custom_column flags.
 
+
+Handling Duplicate Items:
+
+  If --discard_duplicates is specified, the entire request log line is stored
+  in "request_log", as primary key. This allows you to run this tool multiple
+  times over several files to combine them--it'll only record the first one
+  seen. However, you may lose legitimate duplicate records; adding --include_all
+  will reduce the chance of legitimate duplicates occuring.
+
+  This is particularly useful as request_logs has no mechanism to download
+  all request logs and app logs items at once. A common pattern might be:
+
+  # Download all applogs.
+  appcfg.py request_logs --severity 0 --include_all <appdirectory> applogs.txt
+  # Download all requestlogs. There may be overlap with the applogs.
+  appcfg.py request_logs --include_all <appdirectory> request.txt
+  # Run the logparser to insert them into requests.db.
+  logparser.py --discard_duplicates --db requests.db requests.txt applogs.txt
 """
 # pylint: disable-msg=C6409
 
@@ -245,7 +257,10 @@ def parse_line(line, custom_columns):
   if line.startswith('\t'):
     applog = line.strip()  # remove leading tab and trailing newline.
     results['applog'] = applog
-    results['applog_severity'] = applog.split(':', 1)[0]
+    # Some applogs have severity; some are continuations and do not.
+    if (len(applog) > 2 and applog[1] == ':'
+        and applog[0] >= '0' and applog[0] <= '9'):
+      results['applog_severity'] = applog[0]
     for column, regexp in custom_columns.iteritems():
       match = re.search(regexp, applog)
       if match:
@@ -303,9 +318,9 @@ def insert_row(row_dict, insert_cursor, discard_duplicates):
     values.append(value)
 
   try:
-    insert_cursor.execute('insert into requests (%s) values (%s)' %
-                          (','.join(columns), ','.join(['?'] * len(columns))),
-                          values)
+    statement = ('insert into requests (%s) values (%s)' %
+                 (','.join(columns), ','.join(['?'] * len(columns))))
+    insert_cursor.execute(statement, values)
   except sqlite3.IntegrityError:
     if not discard_duplicates:
       # This should never happen anyway as we shouldn't have specified
@@ -332,15 +347,18 @@ def parse_log_file(lines, connection, discard_duplicates, custom_columns):
   insert_cursor = connection.cursor()
   request_count = 0
   insert_count = 0
+  applog_severity = ''
   for line in lines:
     parsed_line = parse_line(line, custom_columns)
     if 'applog' in parsed_line:
       # TODO: Discard the first severity 0 applog line, which seems to be
       # a variant of the requestlog line.
       applog = parsed_line.pop('applog')
-      severity = 'applog%s' % parsed_line.pop('applog_severity')
+      applog_severity = parsed_line.pop('applog_severity', applog_severity)
       result_dict['applog'] = result_dict.get('applog', '') + '\n' + applog
-      result_dict[severity] = result_dict.get(severity, '') + '\n' + applog
+      if applog_severity:
+        severity = 'applog%s' % applog_severity
+        result_dict[severity] = result_dict.get(severity, '') + '\n' + applog
       # Everything else is a custom column. Last one wins.
       result_dict.update(parsed_line)
       continue
@@ -354,6 +372,7 @@ def parse_log_file(lines, connection, discard_duplicates, custom_columns):
       if inserted:
         insert_count += 1
     result_dict = parsed_line
+    applog_severity = ''
     if discard_duplicates:
       result_dict['request_log'] = line
 
