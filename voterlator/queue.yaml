@@ -1,0 +1,11 @@
+total_storage_limit: 1G
+
+queue:
+- name: votes
+  mode: pull
+- name: tally
+  rate: 6/m
+  max_concurrent_requests: 5
+  retry_parameters:
+    min_backoff_seconds: 5
+    max_backoff_seconds: 5

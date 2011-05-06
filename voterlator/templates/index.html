@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block body %}
+<form action="/" method="post">
+Vote for the ugliest language! <br/>
+{% for lang in LANGUAGES %}
+  <input type="radio" name="ugliest" value={{lang}} />{{lang}}<br/>
+{% endfor %}
+<input type="submit" value="Ugly!" /><br/>
+</form>
+<table>
+  <thead><th>Language</th><th>Count</th></thead>
+  {% for tally in tallies %}
+    <tr>
+      <th>{{tally.key.name}}</th>
+      <td>{{tally.count}}</td>
+    </tr>
+  {% endfor %}
+</table>
+{% endblock %}
