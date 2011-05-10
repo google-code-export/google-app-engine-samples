@@ -1,0 +1,9 @@
+total_storage_limit: 10G
+
+queue:
+- name: imageconvert
+  mode: pull
+  acl:
+  - user_email: vibhooti@google.com
+  - user_email: svivek@google.com
+  - user_email: nverne@google.com
