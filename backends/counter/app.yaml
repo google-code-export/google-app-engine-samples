@@ -1,0 +1,15 @@
+application: backends-io
+version: 1
+runtime: python
+api_version: 1
+
+handlers:
+- url: /backend/counter/.*
+  script: counter.py
+  login: admin
+
+- url: /welcome
+  script: demo_frontend.py
+
+- url: /.*
+  script: frontend.py

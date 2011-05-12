@@ -1,0 +1,10 @@
+backends:
+- name: counter
+  start: counter.py
+  instances: 1
+  class: B2
+
+- name: loadtest
+  start: loadtest.py
+  instances: 10
+  class: B1
