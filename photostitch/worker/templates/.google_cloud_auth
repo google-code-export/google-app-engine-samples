@@ -1,0 +1,10 @@
+{
+  "google-api-client-python-taskqueue-client/1.0": {
+    "access_tokens": {
+    },
+    "refresh_token": "<refresh_token>", 
+    "scopes": [
+      "https://www.googleapis.com/auth/cloud-taskqueue"
+    ]
+  }
+}

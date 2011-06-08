@@ -1,0 +1,7 @@
+total_storage_limit: 10G
+
+queue:
+- name: photostitch
+  mode: pull
+  acl:
+  - user_email: your-email@domain.com

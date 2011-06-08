@@ -1,0 +1,33 @@
+This directory contains the files to set up and run a worker to service the photo
+stitcher queue.
+
+To get started:
+
+1. Copy templates/.* and templates/* into the worker
+directory and fill in your authentication information. You should probably
+"chmod 600" these files.
+
+  * .google_cloud_auth -- This is needed by the worker to talk to the task queue
+    service. You can generate this by installing and running the
+    gtaskqueue_puller application. The easiest way is to start a worker, run the
+    setup.sh script (below) and the run gtaskqueue_puller to prompt
+    authentication.
+
+You also need to modify service_queue.sh with the appid of the AppEngine that
+you will be servicing. Also modify other parameters as appropriate. The most
+basic ones are :
+ - It tries to run 8 workers at a time. (num_tasks).
+ - Lease time is 10 mins/task. (lease_secs).
+ - There are also advanced ones, run gtaskqueue_puller --help for details.
+
+4. Set up the workers.
+
+  $ ./setup.sh
+  <lots of spew -- hopefully everything works!>
+
+5. Start the stitcher up
+
+  $ ./service_queue.sh
+
+6. Stop the stitcher:
+  killall -9 gtaskqueue_puller

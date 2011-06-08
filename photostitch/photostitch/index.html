@@ -1,0 +1,88 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <title>Photo Stitch</title>
+    <style>
+    body {
+      font-family: Verdana, sans-serif;
+      font-size: 90%;
+    }
+    .form {
+      border: 2px solid #12256D;
+      background-color: #708AF0;
+      margin: 10px;
+    }
+    .form > .title {
+      background-color: #12256D;
+      color: #708AF0;
+      padding: 20px;
+      font-size: 150%;
+    }
+    .form > form {
+      padding: 10px;
+    }
+    .batch {
+      border: 2px solid #333;
+      background-color: #ddd;
+      margin: 10px;
+    }
+    .batch > .title {
+      background-color: #333;
+      color: #ddd;
+      padding: 20px;
+    }
+    .name {
+      font-size: 150%;    
+    }
+    .status {
+      xfont-style: italic;  
+      font-size: 70%;
+    }
+    .title a {
+      color: inherit;
+    }
+    .result {
+      padding: 10px;
+    }
+    .result .title {
+      padding: 5px;
+    }
+    </style>
+  </head>
+  <body>
+    <img src="/static/photostitch.png">
+    <div class=form>
+      <div class=title>Stitch some photos</div>
+      <form id="file_upload_form" method="post" enctype="multipart/form-data" action="upload/">
+        Batch Name: <input name="batch" id="batch" type="text" size="30" value="stitch" /></br>
+        Zip of Images: <input name="file" id="file" size="50" type="file"/></br>
+        <input type="submit" name="action" value="Upload and Stitch"/>
+      </form>
+    </div>
+    {% for batch in batches %}
+      <div class=batch>
+        <div class=title> 
+          <span class=name>{{ batch.name }}</span><br/>
+          <span class=status>Status: {{ batch.status }}
+            {% if batch.log %} - <a href="http://commondatastorage.googleapis.com/{{ batch.output_base }}/{{ batch.log }}">log</a>{% endif %}</span></div>
+            
+        {% if batch.input %}
+        <div class=result>
+          <div class=title>Input</div>
+          {% for input in batch.input %}
+            <a href="http://commondatastorage.googleapis.com/{{ batch.output_base }}/{{ input.full }}"><img src="http://commondatastorage.googleapis.com/{{ batch.output_base }}/{{ input.thumb }}"></a>
+          {% endfor %}
+        </div>
+        {% endif %}
+        
+        {% if batch.output %}
+        <div class=result>
+          <div class=title>Output</div>
+          <a href="http://commondatastorage.googleapis.com/{{ batch.output_base }}/{{ batch.output.full }}"><img src="http://commondatastorage.googleapis.com/{{ batch.output_base }}/{{ batch.output.thumb }}"></a>
+        </div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </body>
+</html>
+
