@@ -60,6 +60,7 @@ def increment(name):
     counter.count += 1
     counter.put()
   db.run_in_transaction(txn)
+  # does nothing if the key does not exist
   memcache.incr(name)
 
   
