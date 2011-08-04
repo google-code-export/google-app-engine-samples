@@ -40,7 +40,7 @@ def get_count(name):
     total = 0
     for counter in GeneralCounterShard.all().filter('name = ', name):
       total += counter.count
-    memcache.add(name, str(total), 60)
+    memcache.add(name, total, 60)
   return total
 
   
