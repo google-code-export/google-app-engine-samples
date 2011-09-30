@@ -1,0 +1,35 @@
+@import url(//fonts.googleapis.com/css?family=Droid+Sans+Mono);
+
+.CodeMirror {
+    padding-left: 2em;
+}
+
+.CodeMirror-scroll {
+    height: auto; overflow: visible;
+}
+
+.CodeMirror-gutter-text {
+}
+
+.CodeMirror-lines {
+}
+
+body {
+    margin: auto;
+    width: 800px;
+}
+
+#eval {
+    width: 800px;
+    height: 300px;
+    border: none;
+}
+
+#logo {
+    width: 35px;
+    height: 27px;
+}
+
+body, input[type=submit] {
+    font-family: 'Droid Sans Mono', sans-serif;
+}

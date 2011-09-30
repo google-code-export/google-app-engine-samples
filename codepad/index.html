@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+  <head>
+    <link rel="stylesheet" href="/static/codemirror.css">
+    <link rel="stylesheet" href="/static/default.css">
+    <link rel="stylesheet" href="/static/codepad.css">
+  </head>
+  <body>
+    <h1><img id="logo" title="AE" src="/static/appengine_lowres.png"> codepad</h1>
+    <form action="/{{ pad.key.id }}" method="POST">
+<pre id="source">from google.appengine.ext import webapp
+
+class MainHandler(webapp.RequestHandler):
+    def get(self):
+      <textarea name="code" cols="80" id="code">{{ pad.code|default:"self.response.out.write('Hello world!')" }}</textarea>
+
+application = webapp.WSGIApplication([('/', MainHandler)])
+
+def main():
+    util.run_wsgi_app(application)
+
+if __name__ == '__main__':
+    <input type="submit" value="main()"> # or jump to <a href="/{{ pad.parent_pad.key.id }}">parent</a></pre>
+    </form>
+    {% if pad %}
+    <iframe src="{{ pad.key.id }}/eval" id="eval">
+    </iframe>
+    {% endif %}
+  <script src="static/codemirror.js"></script>
+  <script>
+    var code = document.getElementById("code");
+    var eval = document.getElementById("eval");
+    var myCodeMirror = CodeMirror.fromTextArea(code, {mode: "python", lineNumbers: true});
+    myCodeMirror.focus();
+  </script>
+  </body>
+</html>
