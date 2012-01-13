@@ -192,8 +192,8 @@ class FrontPageHandler(webapp.RequestHandler):
              'login_url': users.create_login_url(session_url),
              'logout_url': users.create_logout_url(session_url),
              }
-    rendered = webapp.template.render(template_file, vars, debug=_DEBUG)
-    self.response.out.write(rendered)
+    rendered = template.render(template_file, vars, debug=_DEBUG)
+    self.response.out.write(unicode(rendered))
 
 
 class StatementHandler(webapp.RequestHandler):
