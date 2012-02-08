@@ -17,15 +17,26 @@
 """A guestbook sample app for Google Cloud SQL.
 
 Deployed at http://sql-guestbook.appspot.com/
+
+Schema:
+
+CREATE TABLE `Greetings` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `author` varchar(32) DEFAULT NULL,
+  `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `content` varchar(512) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `date` (`date`)
+) DEFAULT CHARSET=utf8;
 """
 
 import cgi
 import datetime
 import sys
 
-from google3.apphosting.api import rdbms
-from google3.apphosting.ext import webapp
-from google3.apphosting.ext.webapp import util
+from google.appengine.api import rdbms
+from google.appengine.ext import webapp
+from google.appengine.ext.webapp import util
 
 # rdbms db-api connection, globally cached
 conn = None
@@ -53,7 +64,7 @@ class Guestbook(webapp.RequestHandler):
 
     cursor = conn.cursor()
     cursor.execute(
-        'SELECT author, date, content FROM Greetings ORDER BY date DESC')
+        'SELECT author, date, content FROM Greetings ORDER BY date DESC LIMIT 10')
     for author, date, content in cursor.fetchall():
       self.response.out.write("""
       <p class="signature"> %s
