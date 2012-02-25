@@ -42,7 +42,7 @@ from google.appengine.ext.webapp import util
 conn = None
 DEBUG = True
 DATABASE_NAME = 'guestbook'
-INSTANCE ='googlecom:sqlguestbook'
+INSTANCE ='google.com:speckle-python-demos:sqlguestbook-55'
 
 _PARAM_MARKERS = { 'qmark': '?', 'format': '%s' }
 MARKER = _PARAM_MARKERS[rdbms.paramstyle]

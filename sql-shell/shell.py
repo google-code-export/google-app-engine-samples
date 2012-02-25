@@ -30,7 +30,7 @@ from google.appengine.ext.webapp import util
 conn = None
 DEBUG = True
 DATABASE_NAME = 'shell'
-INSTANCE ='googlecom:sqlshell'
+INSTANCE ='google.com:speckle-python-demos:sqlshell-55'
 
 
 class StatementHandler(webapp.RequestHandler):
