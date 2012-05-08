@@ -1,0 +1,129 @@
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="./css/byword.css"/>
+  </head>
+
+   <body style="margin:20px;width:95%;">
+
+<h1 id="full-textsearchdemoapp:productsearch">Full-Text Search Demo App: Product Search</h1>
+
+<h2 id="introduction">Introduction</h2>
+
+<p>This Python App Engine application illustrates the use of the <a href="https://developers.google.com/appengine/docs/python/search">Full-Text Search
+API</a> in a &#8220;Product
+Search&#8221; domain with two categories of sample products: <em>books</em> and
+<em>televisions</em>. This README assumes that you are already familiar with how to
+configure and deploy an App Engine app. If not, first see the App Engine
+<a href="https://developers.google.com/appengine/docs/python/overview">documentation</a>
+and <a href="https://developers.google.com/appengine/docs/python/gettingstarted">Getting Started guide</a>.</p>
+
+<p>This demo app allows users to search product information using full-text search,
+and to add reviews with ratings to the products. Search results can be sorted
+according to several criteria. In conjunction with listed search results, a
+sidebar allows the user to further filter the search results on product rating.
+(A product&#8217;s rating is the average of its reviews, so if a product has no
+reviews yet, its rating will be 0).</p>
+
+<p>A user does not need to be logged in to search the products, or to add reviews.
+A user must be logged in <strong>as an admin of the app to add or modify product
+data</strong>. The sidebar admin links are not displayed for non-admin users.</p>
+
+<h2 id="informationonrunningtheapplocally">Information About Running the App Locally</h2>
+
+<p>Log in as an app admin to add and modify the app&#8217;s product data.</p>
+
+<p>The app uses XG (cross-group) transactions, which requires the dev_appserver to
+be run with the <code>--high_replication</code> flag. E.g., to start up the dev_appserver
+from the command line in the project directory (this directory), assuming the
+GAE SDK is in your path, do:</p>
+
+<pre><code>dev_appserver.py --high_replication .
+</code></pre>
+
+<p>The app is configured to use Python 2.7. On some platforms, it may also be
+necessary to have Python 2.7 installed locally when running the dev_appserver.
+The app&#8217;s unit tests also require Python 2.7.</p>
+
+<p><strong>Locally, the documents index is not preserved across restarts of the dev app
+server</strong>. So, when running locally, you may want to re-initialize the sample
+app data upon each restart, as described below.</p>
+
+<p>When running the app locally, not all features of the search API are supported.
+So, not all search queries will give the same results during local testing as
+when run with the deployed app. As one example, numeric comparison queries are
+not currently supported with the dev_appserver.
+This means that filtering on product ratings is not supported
+locally. Be sure to test on a deployed version of your app as well as locally.</p>
+
+<h2 id="administeringthedeployedapp">Administering the deployed app</h2>
+
+<p>You will need to be logged in as an administrator of the app to add and modify
+product data, though not to search products or add reviews. If you want to
+remove this restriction, you can edit the <code>login: admin</code> specification in
+<code>app.yaml</code>, and remove the <code>@BaseHandler.admin</code> decorators in
+<code>admin_handlers.py</code>.</p>
+
+<h2 id="loadingsampledata">Loading Sample Data</h2>
+
+<p>When you first start up your app, you will want to add sample data to it.
+Because the <code>dev_appserver</code> does not preserve indexed document data between
+restarts, you will probably want to do this <strong>each time you launch the app
+locally</strong>. (This is not necessary for the deployed app, which will retain data
+between deployments).</p>
+
+<p>Sample product data can be added in two ways. First, sample product data in CSV
+format can be added in batch via a link on the app&#8217;s admin page. Batch indexing
+of documents is more efficient than adding the documents one at a time. Note
+that because the <code>dev_appserver</code> does not preserve indexed document data between
+restarts, for consistency <strong>the batch addition of sample data first removes all
+existing index and datastore product data</strong>.</p>
+
+<p>The second way to add sample data is via the admin&#8217;s &#8220;Create new product&#8221; link
+in the sidebar, which lets an admin add products (either &#8220;books&#8221; or
+&#8220;televisions&#8221;) one at a time.</p>
+
+<h2 id="updatingproductdocumentswithanewaveragerating">Updating product documents with a new average rating</h2>
+
+<p>When a user creates a new review, the average rating for that product is updated
+in the datastore. The app may be configured to update the associated product
+<code>search.Document</code> at the same time, or do this at a later time in batch (which
+is more efficient). A cron job has been defined (in <code>cron.yaml</code>) to
+periodically check for any products that need a ratings update. An app admin can
+also run the batch job directly from the admin page. This behaviour is
+configured via <code>config.BATCH_RATINGS_UPDATE</code> - if <code>False</code>, documents are updated
+right away.</p>
+
+<h2 id="searches">Searches</h2>
+
+<p>Any valid queries can be typed into the search box. This includes simple word
+and phrase queries, but you may also submit queries that include references to
+specific document fields and use numeric comparators on numeric fields. See the
+Search API&#8217;s
+<a href="https://developers.google.com/appengine/docs/python/search">documentation</a> for
+a description of the query syntax. </p>
+
+<p>Thus, for explanatory purposes, the &#8220;product details&#8221; show all actual
+field names of the given product document; you can use this information to
+construct queries against those fields. In the same spirit, the raw
+query string used for the query is displayed with the search results.</p>
+
+<p>Only product information is searched; product review text is not included in the
+search.</p>
+
+<h3 id="someexamplesearches">Some example searches</h3>
+
+<p>Below are some example queries, which assume the sample data has been loaded.
+As discussed above, not all of these queries are supported by the dev app
+server.</p>
+
+<p><code>stories price &lt; 10</code><br/>
+<code>price &gt; 10 price &lt; 15</code><br/>
+<code>publisher:Vintage</code><br/>
+<code>Mega TVs</code><br/>
+<code>name:tv1</code><br/>
+<code>size > 30</code>
+</p>
+
+	</body>
+</html>
+

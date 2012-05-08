@@ -1,0 +1,13 @@
+application: search-py-demo
+version: 1
+runtime: python
+api_version: 1
+
+handlers:
+- url: /static
+  static_dir: static
+- url: /_ah/admin.*
+  script: $PYTHON_LIB/google/appengine/ext/admin/
+
+- url: .*
+  script: search_demo.py

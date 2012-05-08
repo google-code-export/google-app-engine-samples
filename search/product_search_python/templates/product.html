@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block head %}
+    <title>Product Information for {{pname}}</title>
+{% endblock %}
+
+
+  {% block content %}
+      <h2>Product Information for {{pname}}</h2>
+
+      <p><br>(For expository purposes, all document fields are listed below with their actual names;
+        a real customer-facing app would expose this information differently.)</p>
+
+      <p><br/>
+      {% for field in prod_doc.fields %}
+          <b>{{field.name}}</b>:&nbsp;{{field.value}} <br/>
+      {% endfor %}
+        <br/><a href="{{review_link}}">Reviews for {{pname}}</a>
+      </p>
+
+
+    <h4>Create a Review for {{pname}}</h4>
+
+    <form action="/create_review" method="post">
+       <input type="hidden" name="pid" value="{{pid}}" />
+       <input type="hidden" name="category" value="{{category}}" />
+       <input type="hidden" name="pname" value="{{pname}}" />
+       <div class="clearfix">
+        <label for="comment">review comment:</label>
+        <div class="input">
+         <textarea name="comment" rows="3" cols="80">{{comment}}</textarea>
+        </div>
+       </div>
+
+       <div class="clearfix">
+        <label for="rating">rating (1-5):</label>
+        <div class="input">
+         <input type="text" id="rating" name="rating" value="{{rating}}"/>
+        </div>
+       </div>
+
+      <div class="actions">
+       <input class="btn primary" id="subreview" name="subreview" type="submit" value="Review"/>
+       <input type="reset" class="btn primary"  name="reviewreset" value="Clear"/>
+      </div>
+    </form>
+
+  {% if user_is_admin %}
+  <p>Delete this product and its reviews; no undo (admin).</p>
+  <form action="/admin/delete_product" method="post">
+    <input type="hidden" name="pid" value="{{pid}}" />
+    <div class="actions">
+     <input class="btn primary" id="delete_prod" name="delete_prod" type="submit" value="Delete Product"/>
+    </div>
+  </form>
+  {% endif %}
+
+ {% endblock %}
