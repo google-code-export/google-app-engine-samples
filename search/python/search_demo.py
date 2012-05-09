@@ -18,10 +18,6 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp.util import run_wsgi_app
 
-# contains a function to allow proper construction of sort options in both
-# release 1.6.4 and 1.6.5+.  See code below.
-import sortoptions
-
 
 _INDEX_NAME = 'greeting'
 
@@ -43,11 +39,9 @@ class MainPage(webapp.RequestHandler):
         expr_list = [search.SortExpression(
             expression='author', default_value='',
             direction=search.SortExpression.DESCENDING)]
-        # construct the sort options value using the get_sort_options() wrapper
-        # function, which will work correctly in both release 1.6.4 and
-        # release 1.6.5+.
-        sort_opts = sortoptions.get_sort_options(
-            expr_list, match_scorer=None)
+        # construct the sort options 
+        sort_opts = search.SortOptions(
+             expressions=expr_list)
         query_options = search.QueryOptions(
             limit=3,
             sort_options=sort_opts)
