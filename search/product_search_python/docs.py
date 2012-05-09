@@ -509,8 +509,12 @@ class Product(BaseDocumentManager):
     curr_doc = cls.getDocFromPid(params['pid'])
     d = cls._createDocument(**params)
     if curr_doc:  #don't overwrite ratings info from existing doc
-      avg_rating = cls(curr_doc).getAvgRating()
-      cls(d).setAvgRating(avg_rating)
+      try:
+        avg_rating = cls(curr_doc).getAvgRating()
+        cls(d).setAvgRating(avg_rating)
+      except TypeError:
+        # catch potential issue with 0-valued numeric fields in older SDK
+        logging.exception("catch 0-valued field error:")
 
     # This will reindex if a doc with that doc id already exists
     doc_ids = cls.add(d)
