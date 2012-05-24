@@ -230,7 +230,8 @@ class ProductSearchHandler(BaseHandler):
     return params
 
   def post(self):
-    self.redirect('/psearch?' + urllib.urlencode(self.parseParams()))
+    params = self.parseParams()
+    self.redirect('/psearch?' + urllib.urlencode(dict([k, v.encode('utf-8')] for k, v in params.items())))
 
   def _getDocLimit(self):
     """if the doc limit is not set in the config file, use the default."""
@@ -395,7 +396,7 @@ class ProductSearchHandler(BaseHandler):
                                         docs.Product.AR, n+1)
       else:  # max rating
         query += ' %s:%s' % (docs.Product.AR, n)
-    query_info = {'query': user_query, 'sort': sort,
+    query_info = {'query': user_query.encode('utf-8'), 'sort': sort,
              'category': category}
     rlinks = docs.Product.generateRatingsLinks(orig_query, query_info)
     return (query, rlinks)
