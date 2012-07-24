@@ -23,6 +23,8 @@ PRODUCT_INDEX_NAME = 'productsearch1'  # The document index name.
     # ASCII string not starting with '!'. Whitespace characters are
     # excluded.
 
+STORE_INDEX_NAME = 'stores1'
+
 # set BATCH_RATINGS_UPDATE to False to update documents with changed ratings
 # info right away.  If True, updates will only occur when triggered by
 # an admin request or a cron job.  See cron.yaml for an example.

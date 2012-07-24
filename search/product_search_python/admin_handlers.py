@@ -30,11 +30,13 @@ import config
 import docs
 import errors
 import models
+import stores
 import utils
 
 from google.appengine.api import users
 from google.appengine.ext.deferred import defer
 from google.appengine.ext import ndb
+from google.appengine.api import search
 
 
 def reinitAll(sample_data=True):
@@ -51,14 +53,16 @@ def reinitAll(sample_data=True):
   ndb.delete_multi(review_keys)
   prod_keys = models.Product.query().fetch(keys_only=True)
   ndb.delete_multi(prod_keys)
-  # delete all the associated product documents in the doc index
+  # delete all the associated product documents in the doc and
+  # store indexes
   docs.Product.deleteAllInProductIndex()
+  docs.Store.deleteAllInIndex()
   # load in sample data if indicated
   if sample_data:
     logging.info('Loading product sample data')
     # Load from csv sample files.
     # The following are hardwired to the format of the sample data files
-    # for the two example product types ('books' and 'televisions')-- see
+    # for the two example product types ('books' and 'hd televisions')-- see
     # categories.py
     datafile = os.path.join('data', config.SAMPLE_DATA_BOOKS)
     # books
@@ -76,7 +80,28 @@ def reinitAll(sample_data=True):
          'size', 'brand', 'tv_type',
          'description'])
     importData(reader)
+
+    # next create docs from store location info
+    loadStoreLocationData()
+
   logging.info('Re-initialization complete.')
+
+def loadStoreLocationData():
+    # create documents from store location info
+    # currently logs but otherwise swallows search errors.
+    slocs = stores.stores
+    for s in slocs:
+      logging.info("s: %s", s)
+      geopoint = search.GeoPoint(s[3][0], s[3][1])
+      fields = [search.TextField(name='storename', value=s[1]),
+                search.TextField(name='address', value=s[2]),
+                search.GeoField(name='store_location', value=geopoint)
+              ]
+      d = search.Document(doc_id=s[0], fields=fields)
+      try:
+        add_result = search.Index(config.STORE_INDEX_NAME).add(d)
+      except search.Error:
+        logging.exception("Error adding document:")
 
 
 def importData(reader):
@@ -114,7 +139,7 @@ class AdminHandler(BaseHandler):
       tdict['notification'] = notification
     self.render_template('admin.html', tdict)
 
-  @BaseHandler.admin
+  @BaseHandler.logged_in
   def get(self):
     action = self.request.get('action')
     if action == 'reinit':
@@ -161,7 +186,7 @@ class DeleteProductHandler(BaseHandler):
   """Remove data for the product with the given pid, including that product's
   reviews and its associated indexed document."""
 
-  @BaseHandler.admin
+  @BaseHandler.logged_in
   def post(self):
     pid = self.request.get('pid')
     if not pid:  # this should not be reached
@@ -213,10 +238,7 @@ class CreateProductHandler(BaseHandler):
     if doc:  # populate default params from the doc
       fields = doc.fields
       for f in fields:
-        if f.name == 'catname':
-          params['category'] = f.value
-        else:
-          params[f.name] = f.value
+        params[f.name] = f.value
     else:
       # start with the 'core' fields
       params = {
@@ -238,12 +260,12 @@ class CreateProductHandler(BaseHandler):
       params[k] = self.request.get(k, v)
     return params
 
-  @BaseHandler.admin
+  @BaseHandler.logged_in
   def get(self):
     params = self.parseParams()
     self.render_template('create_product.html', params)
 
-  @BaseHandler.admin
+  @BaseHandler.logged_in
   def post(self):
     self.createProduct(self.parseParams())
 

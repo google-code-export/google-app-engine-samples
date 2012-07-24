@@ -42,8 +42,11 @@ class Category(ndb.Model):
   _RCATEGORY_DICT = None
   _ROOT = 'root'  # the 'root' category of the category tree
 
-  category_name = ndb.StringProperty()
   parent_category = ndb.KeyProperty()
+
+  @property
+  def category_name(self):
+    return self.key.id()
 
   @classmethod
   def buildAllCategories(cls):
@@ -67,9 +70,9 @@ class Category(ndb.Model):
       logging.warn('no category name for %s', category)
       return
     if parent_key:
-      cat = cls(category_name=cname, parent_category=parent_key)
+      cat = cls(id=cname, parent_category=parent_key)
     else:
-      cat = cls(category_name=cname)
+      cat = cls(id=cname)
     cat.put()
 
     children = category_data.get('children')
@@ -84,16 +87,6 @@ class Category(ndb.Model):
       cls.buildCategory(cat, parent_key)
 
   @classmethod
-  def getCategoryName(cls, cid):
-    """get a category name given its id."""
-    if cid:
-      try:
-        return cls.getRCategoryDict()[long(cid)]
-      except ValueError:
-        return None
-    return None
-
-  @classmethod
   def getCategoryInfo(cls):
     """Build and cache a list of category id/name correspondences.  This info is
     used to populate html select menus."""
@@ -101,38 +94,9 @@ class Category(ndb.Model):
       cls.buildAllCategories()  #first build categories from data file
           # if required
       cats = cls.query().fetch()
-      cls._CATEGORY_INFO = [(str(c.key.id()), c.category_name) for c in cats
-            if c.category_name != cls._ROOT]
+      cls._CATEGORY_INFO = [(c.key.id(), c.key.id()) for c in cats
+            if c.key.id() != cls._ROOT]
     return cls._CATEGORY_INFO
-
-  @classmethod
-  def getCategoryDict(cls):
-    """Generate and cache a dict that maps category names to their ids."""
-
-    if not cls._CATEGORY_DICT:
-      cls.buildAllCategories()  #first build categories from data file
-          # if required
-      cdict = {}
-      category_entities = cls.query().fetch()
-      for c in category_entities:
-        cdict[c.category_name] = c.key.id()
-      cls._CATEGORY_DICT = cdict
-    return cls._CATEGORY_DICT
-
-  @classmethod
-  def getRCategoryDict(cls):
-    """Generate and cache a dict that maps category ids to names."""
-
-    if not cls._RCATEGORY_DICT:
-      cls.buildAllCategories()  #first build categories from data file
-          # if required
-      cdict = {}
-      category_entities = cls.query().fetch()
-      for c in category_entities:
-        cdict[c.key.id()] = c.category_name
-      cls._RCATEGORY_DICT = cdict
-    return cls._RCATEGORY_DICT
-
 
 class Product(ndb.Model):
   """Model for Product data. A Product entity will be built for each product,
@@ -142,7 +106,7 @@ class Product(ndb.Model):
 
   doc_id = ndb.StringProperty()  # the id of the associated document
   price = ndb.FloatProperty()
-  category = ndb.IntegerProperty()
+  category = ndb.StringProperty()
   # average rating of the product over all its reviews
   avg_rating = ndb.FloatProperty(default=0)
   # the number of reviews of that product

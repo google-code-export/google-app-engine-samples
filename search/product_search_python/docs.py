@@ -21,6 +21,7 @@ adds some Product-document-specific helper methods.
 
 import collections
 import copy
+import datetime
 import logging
 import re
 import string
@@ -107,7 +108,7 @@ class BaseDocumentManager(object):
   def getDoc(cls, doc_id):
     """Return the document with the given doc id. One way to do this is via
     the list_documents method, as shown here.  If the doc id is not in the
-    index, the first doc in the list will be returned instead, so we need
+    index, the first doc in the index will be returned instead, so we need
     to check for that case."""
     if not doc_id:
       return None
@@ -138,6 +139,11 @@ class BaseDocumentManager(object):
       logging.exception("Error adding documents.")
 
 
+class Store(BaseDocumentManager):
+
+  _INDEX_NAME = config.STORE_INDEX_NAME
+
+
 class Product(BaseDocumentManager):
   """Provides helper methods to manage Product documents.  All Product documents
   built using these methods will include a core set of fields (see the
@@ -153,24 +159,34 @@ class Product(BaseDocumentManager):
   # 'core' product document field names
   PID = 'pid'
   DESCRIPTION = 'description'
-  CAT = 'cat'
-  CATNAME = 'catname'
-  PNAME = 'name'
+  CATEGORY = 'category'
+  PRODUCT_NAME = 'name'
   PRICE = 'price'
-  AR = 'ar' #average rating
+  AVG_RATING = 'ar' #average rating
+  UPDATED = 'modified'
 
   _SORT_OPTIONS = [
-        [AR, 'average rating', search.SortExpression(
-            expression=AR,
+        [AVG_RATING, 'average rating', search.SortExpression(
+            expression=AVG_RATING,
             direction=search.SortExpression.DESCENDING, default_value=1)],
         [PRICE, 'price', search.SortExpression(
+            # other examples:
+            # expression='max(price, 14.99)'
+            # If you access _score in your sort expressions,
+            # your SortOptions should include a scorer.
+            # e.g. search.SortOptions(match_scorer=search.MatchScorer(),...)
+            # Then, you can access the score to build expressions like:
+            # expression='price * _score'
             expression=PRICE,
             direction=search.SortExpression.ASCENDING, default_value=1)],
-        [CATNAME, 'category', search.SortExpression(
-            expression=CATNAME,
+        [UPDATED, 'modified', search.SortExpression(
+            expression=UPDATED,
+            direction=search.SortExpression.DESCENDING, default_value=1)],
+        [CATEGORY, 'category', search.SortExpression(
+            expression=CATEGORY,
             direction=search.SortExpression.ASCENDING, default_value='')],
-        [PNAME, 'product name', search.SortExpression(
-            expression=PNAME,
+        [PRODUCT_NAME, 'product name', search.SortExpression(
+            expression=PRODUCT_NAME,
             direction=search.SortExpression.ASCENDING, default_value='')]
       ]
 
@@ -228,10 +244,6 @@ class Product(BaseDocumentManager):
     doc = cls.getDoc(doc_id)
     if doc:
       pdoc = cls(doc)
-      cat = pdoc.getCategory()
-      # The category cast to int is to avoid a current dev appserver issue when
-      # reindexing. Not an issue for a deployed app.
-      pdoc.setCategory(int(cat))
       pdoc.setAvgRating(avg_rating)
       # The use of the same id will cause the existing doc to be reindexed.
       return doc
@@ -248,7 +260,7 @@ class Product(BaseDocumentManager):
     # reindex the returned updated doc
     return cls.add(ndoc)
 
-# 'accessor' methods
+# 'accessor' convenience methods
 
   def getPID(self):
     """Get the value of the 'pid' field of a Product doc."""
@@ -256,7 +268,7 @@ class Product(BaseDocumentManager):
 
   def getName(self):
     """Get the value of the 'name' field of a Product doc."""
-    return self.getFirstFieldVal(self.PNAME)
+    return self.getFirstFieldVal(self.PRODUCT_NAME)
 
   def getDescription(self):
     """Get the value of the 'description' field of a Product doc."""
@@ -264,23 +276,19 @@ class Product(BaseDocumentManager):
 
   def getCategory(self):
     """Get the value of the 'cat' field of a Product doc."""
-    return self.getFirstFieldVal(self.CAT)
-
-  def getCategoryName(self):
-    """Get the value of the 'catname' field of a Product doc."""
-    return self.getFirstFieldVal(self.CATNAME)
+    return self.getFirstFieldVal(self.CATEGORY)
 
   def setCategory(self, cat):
     """Set the value of the 'cat' (category) field of a Product doc."""
-    return self.setFirstField(search.NumberField(name=self.CAT, value=cat))
+    return self.setFirstField(search.NumberField(name=self.CATEGORY, value=cat))
 
   def getAvgRating(self):
     """Get the value of the 'ar' (average rating) field of a Product doc."""
-    return self.getFirstFieldVal(self.AR)
+    return self.getFirstFieldVal(self.AVG_RATING)
 
   def setAvgRating(self, ar):
     """Set the value of the 'ar' field of a Product doc."""
-    return self.setFirstField(search.NumberField(name=self.AR, value=ar))
+    return self.setFirstField(search.NumberField(name=self.AVG_RATING, value=ar))
 
   def getPrice(self):
     """Get the value of the 'price' field of a Product doc."""
@@ -349,7 +357,10 @@ class Product(BaseDocumentManager):
     may add additional specialized fields; these will be appended to this
     core list. (see _buildProductFields)."""
     fields = [search.TextField(name=cls.PID, value=pid),
-              search.TextField(name=cls.PNAME, value=name),
+              # The 'updated' field is always set to the current date.
+              search.DateField(name=cls.UPDATED,
+                  value=datetime.datetime.now().date()),
+              search.TextField(name=cls.PRODUCT_NAME, value=name),
               # strip the markup from the description value, which can
               # potentially come from user input.  We do this so that
               # we don't need to sanitize the description in the
@@ -363,9 +374,8 @@ class Product(BaseDocumentManager):
               search.TextField(
                   name=cls.DESCRIPTION,
                   value=re.sub(r'<[^>]*?>', '', description)),
-              search.NumberField(name=cls.CAT, value=category),
-              search.TextField(name=cls.CATNAME, value=category_name),
-              search.NumberField(name=cls.AR, value=0.0),
+              search.AtomField(name=cls.CATEGORY, value=category),
+              search.NumberField(name=cls.AVG_RATING, value=0.0),
               search.NumberField(name=cls.PRICE, value=price)
              ]
     return fields
@@ -403,8 +413,8 @@ class Product(BaseDocumentManager):
           elif field_type == search.TextField:
             fields.append(search.TextField(name=k, value=str(v)))
           else:
-            # TODO -- add handling of other field types for generality.  Not
-            # needed for our current sample data.
+            # you may want to add handling of other field types for generality.
+            # Not needed for our current sample data.
             logging.warn('not processed: %s, %s, of type %s', k, v, field_type)
         else:
           error_message = ('value not given for field "%s" of field type "%s"'
@@ -448,12 +458,11 @@ class Product(BaseDocumentManager):
     """Normalize the submitted params for building a product."""
 
     params = copy.deepcopy(params)
-    chash = models.Category.getCategoryDict()
     try:
       params['pid'] = params['pid'].strip()
       params['name'] = params['name'].strip()
       params['category_name'] = params['category']
-      params['category'] = int(chash.get(params['category']))
+      params['category'] = params['category']
       try:
         params['price'] = float(params['price'])
       except ValueError:
@@ -462,6 +471,7 @@ class Product(BaseDocumentManager):
         raise errors.OperationFailedError(error_message)
       return params
     except KeyError as e1:
+      logging.exception("key error")
       raise errors.OperationFailedError(e1)
     except errors.Error as e2:
       logging.debug(
@@ -472,7 +482,9 @@ class Product(BaseDocumentManager):
   def buildProductBatch(cls, rows):
     """Build product documents and their related datastore entities, in batch,
     given a list of params dicts.  Should be used for new products, as does not
-    handle updates of existing product entities."""
+    handle updates of existing product entities. This method does not require
+    that the doc ids be tied to the product ids, and obtains the doc ids from
+    the results of the document add."""
 
     docs = []
     dbps = []
@@ -488,14 +500,20 @@ class Product(BaseDocumentManager):
         dbps.append(dbp)
       except errors.OperationFailedError:
         logging.error('error creating document from data: %s', row)
-    doc_ids = cls.add(docs)
-    if len(doc_ids) != len(dbps):
+    try:
+      add_results = cls.add(docs)
+    except search.Error:
+      logging.exception('Add failed')
+      return
+    if len(add_results) != len(dbps):
+      # this case should not be reached; if there was an issue,
+      # search.Error should have been thrown, above.
       raise errors.OperationFailedError(
-          'Error: wrong number of doc ids returned from indexing operation')
+          'Error: wrong number of results returned from indexing operation')
     # now set the entities with the doc ids, the list of which are returned in
     # the same order as the list of docs given to the indexers
     for i, dbp in enumerate(dbps):
-      dbp.doc_id = doc_ids[i].document_id
+      dbp.doc_id = add_results[i].id
     # persist the entities
     ndb.put_multi(dbps)
 
@@ -505,21 +523,19 @@ class Product(BaseDocumentManager):
     product id and the field values are taken from the params dict.
     """
     params = cls._normalizeParams(params)
-    # check to see if doc already exists
+    # check to see if doc already exists.  We do this because we need to retain
+    # some information from the existing doc.  We could skip the fetch if this
+    # were not the case.
     curr_doc = cls.getDocFromPid(params['pid'])
     d = cls._createDocument(**params)
-    if curr_doc:  #don't overwrite ratings info from existing doc
-      try:
-        avg_rating = cls(curr_doc).getAvgRating()
-        cls(d).setAvgRating(avg_rating)
-      except TypeError:
-        # catch potential issue with 0-valued numeric fields in older SDK
-        logging.exception("catch 0-valued field error:")
+    if curr_doc:  #  retain ratings info from existing doc
+      avg_rating = cls(curr_doc).getAvgRating()
+      cls(d).setAvgRating(avg_rating)
 
     # This will reindex if a doc with that doc id already exists
     doc_ids = cls.add(d)
     try:
-      doc_id = doc_ids[0].document_id
+      doc_id = doc_ids[0].object_id
     except IndexError:
       doc_id = None
       raise errors.OperationFailedError('could not index document')

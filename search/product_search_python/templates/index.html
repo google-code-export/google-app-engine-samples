@@ -28,7 +28,7 @@
 
     <p>&nbsp;</p>
 
-   <p><a target="_blank" href="/static/instrs.html">Click for information</a> about the demo app. Log in as an app admin to load sample data.</p>
+   <p><a target="_blank" href="/static/instrs.html">Click for information</a> about the demo app. Log in to add sample data.</p>
 
   <p>&nbsp;</p>
 
@@ -115,11 +115,11 @@
 
       {% for result in search_response %}
         <p>
-        <b>Product Description</b>: {{result.3|safe}}<br/>
-        <b>Product name</b>: {{result.5}}<br/>
-        <b>Category</b>: {{result.6}}<br/>
-        <b>Price</b>: {{result.4}}<br/>
-        <b>Average Rating</b>:
+        <span style="color: #014C9D;"><i>Product Description</i></span>: {{result.3|safe}}<br/>
+        <span style="color: #014C9D;"><i>Product name</i></span>: {{result.5}}<br/>
+        <span style="color: #014C9D;"><i>Category</i></span>: {{result.6}}<br/>
+        <span style="color: #014C9D;"><i>Price</i></span>: {{result.4}}<br/>
+        <span style="color: #014C9D;"><i>Average Rating</i></span>:
          {% if result.7 < 1 %}
             None yet
          {% else %}

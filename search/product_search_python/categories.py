@@ -20,7 +20,7 @@ are two categories: books, and televisions.
 from google.appengine.api import search
 
 
-televisions = {'name': 'televisions', 'children': []}
+televisions = {'name': 'hd televisions', 'children': []}
 books = {'name': 'books', 'children': []}
 
 ctree =  {'name': 'root', 'children': [books, televisions]}
@@ -29,7 +29,7 @@ ctree =  {'name': 'root', 'children': [books, televisions]}
 # category, category name, and price]
 # Define the non-'core' (differing) product fields for each category
 # above, and their types.
-product_dict =  {'televisions': {'size': search.NumberField,
+product_dict =  {'hd televisions': {'size': search.NumberField,
                                  'brand': search.TextField,
                                  'tv_type': search.TextField},
                  'books': {'publisher': search.TextField,

@@ -20,6 +20,7 @@
 
 import webapp2
 from webapp2_extras import jinja2
+import json
 
 from google.appengine.api import users
 
@@ -29,12 +30,12 @@ class BaseHandler(webapp2.RequestHandler):
   for rendering a template and generating template links."""
 
   @classmethod
-  def admin(cls, handler_method):
+  def logged_in(cls, handler_method):
     """
-    This decorator requires an admin user, and returns 403 otherwise.
+    This decorator requires a logged-in user, and returns 403 otherwise.
     """
     def auth_required(self, *args, **kwargs):
-      if (users.is_current_user_admin() or
+      if (users.get_current_user() or
           self.request.headers.get('X-AppEngine-Cron')):
         handler_method(self, *args, **kwargs)
       else:
@@ -49,6 +50,10 @@ class BaseHandler(webapp2.RequestHandler):
     template_args.update(self.generateSidebarLinksDict())
     self.response.write(self.jinja2.render_template(filename, **template_args))
 
+  def render_json(self, response):
+    self.response.write("%s(%s);" % (self.request.GET['callback'],
+                                     json.dumps(response)))
+
   def getLoginLink(self):
     """Generate login or logout link and text, depending upon the logged-in
     status of the client."""
@@ -61,16 +66,15 @@ class BaseHandler(webapp2.RequestHandler):
     return (url, url_linktext)
 
   def getAdminManageLink(self):
-    """Build link to the admin management page, only if the loggged-in user
-    is an admin."""
-    if users.is_current_user_admin():
+    """Build link to the admin management page, if the user is logged in."""
+    if users.get_current_user():
       admin_url = '/admin/manage'
       return (admin_url, 'Admin/Add sample data')
     else:
       return (None, None)
 
   def createProductAdminLink(self):
-    if users.is_current_user_admin():
+    if users.get_current_user():
       admin_create_url = '/admin/create_product'
       return (admin_create_url, 'Create new product (admin)')
     else:

@@ -21,6 +21,7 @@ import logging
 import time
 import traceback
 import urllib
+import wsgiref
 
 from base_handler import BaseHandler
 import config
@@ -90,8 +91,10 @@ class ShowProductHandler(BaseHandler):
       logging.error(error_message)
     pdoc = docs.Product(doc)
     pname = pdoc.getName()
+    app_url = wsgiref.util.application_uri(self.request.environ)
     rlink = '/reviews?' + urllib.urlencode({'pid': pid, 'pname': pname})
     template_values = {
+        'app_url': app_url,
         'pid': pid,
         'pname': pname,
         'review_link': rlink,
@@ -99,7 +102,8 @@ class ShowProductHandler(BaseHandler):
         'rating': params['rating'],
         'category': pdoc.getCategory(),
         'prod_doc': doc,
-        'user_is_admin': users.is_current_user_admin()}
+        # for this demo, 'admin' status simply equates to being logged in
+        'user_is_admin': users.get_current_user()}
     self.render_template('product.html', template_values)
 
 
@@ -231,7 +235,8 @@ class ProductSearchHandler(BaseHandler):
 
   def post(self):
     params = self.parseParams()
-    self.redirect('/psearch?' + urllib.urlencode(dict([k, v.encode('utf-8')] for k, v in params.items())))
+    self.redirect('/psearch?' + urllib.urlencode(
+        dict([k, v.encode('utf-8')] for k, v in params.items())))
 
   def _getDocLimit(self):
     """if the doc limit is not set in the config file, use the default."""
@@ -264,7 +269,9 @@ class ProductSearchHandler(BaseHandler):
     categoryq = params.get('category')
     if categoryq:
       # add specification of the category to the query
-      query += ' %s:%s' % (docs.Product.CAT, long(categoryq))
+      # Because the category field is atomic, put the category string
+      # in quotes for the search.
+      query += ' %s:"%s"' % (docs.Product.CATEGORY, categoryq)
 
     sortq = params.get('sort')
     try:
@@ -298,31 +305,36 @@ class ProductSearchHandler(BaseHandler):
            'goto_url': url, 'linktext': linktext})
       return
 
-    cat_name = models.Category.getCategoryName(categoryq)
+    # cat_name = models.Category.getCategoryName(categoryq)
     psearch_response = []
     # For each document returned from the search
     for doc in search_results:
+      # logging.info("doc: %s ", doc)
       pdoc = docs.Product(doc)
       # use the description field as the default description snippet, since
       # snippeting is not supported on the dev app server.
-      desc_snippet = pdoc.getDescription()
-      # now see if we can get the actual snippet
+      description_snippet = pdoc.getDescription()
+      price = pdoc.getPrice()
+      # on the dev app server, the doc.expressions property won't be populated.
       for expr in doc.expressions:
         if expr.name == docs.Product.DESCRIPTION:
-          desc_snippet = expr.value
-          break
+          description_snippet = expr.value
+        # uncomment to use 'adjusted price', which should be
+        # defined in returned_expressions in _buildQuery() below, as the
+        # displayed price.
+        # elif expr.name == 'adjusted_price':
+          # price = expr.value
+
       # get field information from the returned doc
       pid = pdoc.getPID()
-      cat = pdoc.getCategory()
-      catname = pdoc.getCategoryName()
-      price = pdoc.getPrice()
+      cat = catname = pdoc.getCategory()
       pname = pdoc.getName()
       avg_rating = pdoc.getAvgRating()
       # for this result, generate a result array of selected doc fields, to
       # pass to the template renderer
       psearch_response.append(
           [doc, urllib.quote_plus(pid), cat,
-           desc_snippet, price, pname, catname, avg_rating])
+           description_snippet, price, pname, catname, avg_rating])
     if not query:
       print_query = 'All'
     else:
@@ -339,7 +351,7 @@ class ProductSearchHandler(BaseHandler):
         'base_pquery': user_query, 'next_link': next_link,
         'prev_link': prev_link, 'qtype': 'product',
         'query': query, 'print_query': print_query,
-        'pcategory': categoryq, 'sort_order': sortq, 'category_name': cat_name,
+        'pcategory': categoryq, 'sort_order': sortq, 'category_name': categoryq,
         'first_res': offsetval + 1, 'last_res': offsetval + returned_count,
         'returned_count': returned_count,
         'number_found': search_results.number_found,
@@ -351,6 +363,15 @@ class ProductSearchHandler(BaseHandler):
 
   def _buildQuery(self, query, sortq, sort_dict, doc_limit, offsetval):
     """Build and return a search query object."""
+
+    # computed and returned fields examples.  Their use is not required
+    # for the application to function correctly.
+    computed_expr = search.FieldExpression(name='adjusted_price',
+        expression='price * 1.08')
+    returned_fields = [docs.Product.PID, docs.Product.DESCRIPTION,
+                docs.Product.CATEGORY, docs.Product.AVG_RATING,
+                docs.Product.PRICE, docs.Product.PRODUCT_NAME]
+
     if sortq == 'relevance':
       # If sorting on 'relevance', use the Match scorer.
       sortopts = search.SortOptions(match_scorer=search.MatchScorer())
@@ -360,20 +381,32 @@ class ProductSearchHandler(BaseHandler):
               limit=doc_limit,
               offset=offsetval,
               sort_options=sortopts,
-              snippeted_fields=[docs.Product.DESCRIPTION]
+              snippeted_fields=[docs.Product.DESCRIPTION],
+              returned_expressions=[computed_expr],
+              returned_fields=returned_fields
               ))
     else:
-      # Otherwise, use the selected field as the sort expression, and get
-      # the sort direction and default from the 'sort_dict' var.
-      expr_list = [sort_dict.get(sortq)]
+      # Otherwise (not sorting on relevance), use the selected field as the
+      # first dimension of the sort expression, and the average rating as the
+      # second dimension, unless we're sorting on rating, in which case price
+      # is the second sort dimension.
+      # We get the sort direction and default from the 'sort_dict' var.
+      if sortq == docs.Product.AVG_RATING:
+        expr_list = [sort_dict.get(sortq), sort_dict.get(docs.Product.PRICE)]
+      else:
+        expr_list = [sort_dict.get(sortq), sort_dict.get(
+              docs.Product.AVG_RATING)]
       sortopts = search.SortOptions(expressions=expr_list)
+      # logging.info("sortopts: %s", sortopts)
       search_query = search.Query(
           query_string=query.strip(),
           options=search.QueryOptions(
               limit=doc_limit,
               offset=offsetval,
               sort_options=sortopts,
-              snippeted_fields=[docs.Product.DESCRIPTION]
+              snippeted_fields=[docs.Product.DESCRIPTION],
+              returned_expressions=[computed_expr],
+              returned_fields=returned_fields
               ))
     return search_query
 
@@ -392,10 +425,10 @@ class ProductSearchHandler(BaseHandler):
       n = None
     if n:
       if n < config.RATING_MAX:
-        query += ' %s >= %s %s < %s' % (docs.Product.AR, n,
-                                        docs.Product.AR, n+1)
+        query += ' %s >= %s %s < %s' % (docs.Product.AVG_RATING, n,
+                                        docs.Product.AVG_RATING, n+1)
       else:  # max rating
-        query += ' %s:%s' % (docs.Product.AR, n)
+        query += ' %s:%s' % (docs.Product.AVG_RATING, n)
     query_info = {'query': user_query.encode('utf-8'), 'sort': sort,
              'category': category}
     rlinks = docs.Product.generateRatingsLinks(orig_query, query_info)
@@ -459,4 +492,48 @@ class ShowReviewsHandler(BaseHandler):
       # render the template.
       self.render_template('reviews.html', template_values)
 
+class StoreLocationHandler(BaseHandler):
+  """Show the reviews for a given product.  This information is pulled from the
+  datastore Review entities."""
 
+  def get(self):
+    """Show a list of reviews for the product indicated by the 'pid' request
+    parameter."""
+
+    query = self.request.get('location_query')
+    lat = self.request.get('latitude')
+    lon = self.request.get('longitude')
+    # the location query from the client will have this form:
+    # distance(store_location, geopoint(37.7899528, -122.3908226)) < 40000
+    # logging.info('location query: %s, lat %s, lon %s', query, lat, lon)
+    try:
+      index = search.Index(config.STORE_INDEX_NAME)
+      # search using simply the query string:
+      # results = index.search(query)
+      # alternately: sort results by distance
+      loc_expr = 'distance(store_location, geopoint(%s, %s))' % (lat, lon)
+      sortexpr = search.SortExpression(
+            expression=loc_expr,
+            direction=search.SortExpression.ASCENDING, default_value=0)
+      sortopts = search.SortOptions(expressions=[sortexpr])
+      search_query = search.Query(
+          query_string=query.strip(),
+          options=search.QueryOptions(
+              sort_options=sortopts,
+              ))
+      results = index.search(search_query)
+    except search.Error:
+      logging.exception("There was a search error:")
+      self.render_json([])
+      return
+    # logging.info("geo search results: %s", results)
+    response_obj2 = []
+    for res in results:
+      gdoc = docs.BaseDocumentManager(res)
+      geopoint = gdoc.getFirstFieldVal('store_location')
+      resp = {'addr': gdoc.getFirstFieldVal('address'),
+              'storename': gdoc.getFirstFieldVal('storename'),
+              'lat': geopoint.latitude, 'lon': geopoint.longitude}
+      response_obj2.append(resp)
+    logging.info("resp: %s", response_obj2)
+    self.render_json(response_obj2)
