@@ -142,6 +142,9 @@ class BaseDocumentManager(object):
 class Store(BaseDocumentManager):
 
   _INDEX_NAME = config.STORE_INDEX_NAME
+  STORE_NAME = 'store_name'
+  STORE_LOCATION = 'store_location'
+  STORE_ADDRESS = 'store_address'
 
 
 class Product(BaseDocumentManager):
@@ -168,7 +171,7 @@ class Product(BaseDocumentManager):
   _SORT_OPTIONS = [
         [AVG_RATING, 'average rating', search.SortExpression(
             expression=AVG_RATING,
-            direction=search.SortExpression.DESCENDING, default_value=1)],
+            direction=search.SortExpression.DESCENDING, default_value=0)],
         [PRICE, 'price', search.SortExpression(
             # other examples:
             # expression='max(price, 14.99)'
@@ -178,7 +181,7 @@ class Product(BaseDocumentManager):
             # Then, you can access the score to build expressions like:
             # expression='price * _score'
             expression=PRICE,
-            direction=search.SortExpression.ASCENDING, default_value=1)],
+            direction=search.SortExpression.ASCENDING, default_value=9999)],
         [UPDATED, 'modified', search.SortExpression(
             expression=UPDATED,
             direction=search.SortExpression.DESCENDING, default_value=1)],
@@ -187,7 +190,7 @@ class Product(BaseDocumentManager):
             direction=search.SortExpression.ASCENDING, default_value='')],
         [PRODUCT_NAME, 'product name', search.SortExpression(
             expression=PRODUCT_NAME,
-            direction=search.SortExpression.ASCENDING, default_value='')]
+            direction=search.SortExpression.ASCENDING, default_value='zzz')]
       ]
 
   _SORT_MENU = None

@@ -529,10 +529,10 @@ class StoreLocationHandler(BaseHandler):
     # logging.info("geo search results: %s", results)
     response_obj2 = []
     for res in results:
-      gdoc = docs.BaseDocumentManager(res)
-      geopoint = gdoc.getFirstFieldVal('store_location')
-      resp = {'addr': gdoc.getFirstFieldVal('address'),
-              'storename': gdoc.getFirstFieldVal('storename'),
+      gdoc = docs.Store(res)
+      geopoint = gdoc.getFirstFieldVal(gdoc.STORE_LOCATION)
+      resp = {'addr': gdoc.getFirstFieldVal(gdoc.STORE_ADDRESS),
+              'storename': gdoc.getFirstFieldVal(gdoc.STORE_NAME),
               'lat': geopoint.latitude, 'lon': geopoint.longitude}
       response_obj2.append(resp)
     logging.info("resp: %s", response_obj2)

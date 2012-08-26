@@ -12,9 +12,9 @@
 <body>
   <div id="wrapper">
     <div id="content">
-<h1 id="full-textsearchdemoapp:productsearch">Full-Text Search Demo App: Product Search</h1>
+<h1>Full-Text Search Demo App: Product Search</h1>
 
-<h2 id="introduction">Introduction</h2>
+<h2>Introduction</h2>
 
 <p>This Python App Engine application illustrates the use of the <a href="https://developers.google.com/appengine/docs/python/search">Full-Text Search
 API</a> in a &#8220;Product
@@ -35,7 +35,23 @@ reviews yet, its rating will be 0).</p>
 A user must be logged in <strong>as an admin of the app to add or modify product
 data</strong>. The sidebar admin links are not displayed for non-admin users.</p>
 
-<h2 id="informationaboutrunningtheapplocally">Information About Running the App Locally</h2>
+<h2>Configuration</h2>
+
+<p>Before you deploy the application, edit <code>app.yaml</code> to specify your own app id and version.</p>
+
+<p>In <code>templates/product.html</code>, the Google Maps API is accessed. It does not require an API key, but you are encouraged to use one to monitor your maps usage. In the <head> element, look for:</p>
+
+<pre><code>src=&quot;https://maps.googleapis.com/maps/api/js?sensor=false&quot;
+</code></pre>
+
+<p>and replace it with something like the following, where <code>replaceWithYourAPIKey</code> is your own API key:</p>
+
+<pre><code>  src=&quot;https://maps.googleapis.com/maps/api/js?sensor=false&amp;amp;key=replaceWithYourAPIKey&quot;
+</code></pre>
+
+<p>as described <a href="https://developers.google.com/maps/documentation/javascript/tutorial#api_key">here</a>.</p>
+
+<h2>Information About Running the App Locally</h2>
 
 <p>Log in as an app admin to add and modify the app&#8217;s product data.</p>
 
@@ -51,18 +67,12 @@ GAE SDK is in your path, do:</p>
 necessary to have Python 2.7 installed locally when running the dev_appserver.
 The app&#8217;s unit tests also require Python 2.7.</p>
 
-<p><strong>Locally, the documents index is not preserved across restarts of the dev app
-server</strong>. So, when running locally, you may want to re-initialize the sample
-app data upon each restart, as described below.</p>
-
 <p>When running the app locally, not all features of the search API are supported.
-So, not all search queries will give the same results during local testing as
-when run with the deployed app. As one example, numeric comparison queries are
-not currently supported with the dev_appserver. This means that filtering on
-product ratings is not supported locally.
+So, not all search queries may give the same results during local testing as
+when run with the deployed app.
 Be sure to test on a deployed version of your app as well as locally.</p>
 
-<h2 id="administeringthedeployedapp">Administering the deployed app</h2>
+<h2>Administering the deployed app</h2>
 
 <p>You will need to be logged in as an administrator of the app to add and modify
 product data, though not to search products or add reviews. If you want to
@@ -70,26 +80,22 @@ remove this restriction, you can edit the <code>login: admin</code> specificatio
 <code>app.yaml</code>, and remove the <code>@BaseHandler.admin</code> decorators in
 <code>admin_handlers.py</code>.</p>
 
-<h2 id="loadingsampledata">Loading Sample Data</h2>
+<h2>Loading Sample Data</h2>
 
 <p>When you first start up your app, you will want to add sample data to it.
-Because the <code>dev_appserver</code> does not preserve indexed document data between
-restarts, you will probably want to do this <strong>each time you launch the app
-locally</strong>. (This is not necessary for the deployed app, which will retain data
-between deployments).</p>
+</p>
 
 <p>Sample product data can be added in two ways. First, sample product data in CSV
 format can be added in batch via a link on the app&#8217;s admin page. Batch indexing
-of documents is more efficient than adding the documents one at a time. Note
-that because the <code>dev_appserver</code> does not preserve indexed document data between
-restarts, for consistency <strong>the batch addition of sample data first removes all
+of documents is more efficient than adding the documents one at a time. For consistency,
+<strong>the batch addition of sample data first removes all
 existing index and datastore product data</strong>.</p>
 
 <p>The second way to add sample data is via the admin&#8217;s &#8220;Create new product&#8221; link
 in the sidebar, which lets an admin add sample products (either &#8220;books&#8221; or
 &#8220;hd televisions&#8221;) one at a time.</p>
 
-<h2 id="updatingproductdocumentswithanewaveragerating">Updating product documents with a new average rating</h2>
+<h2>Updating product documents with a new average rating</h2>
 
 <p>When a user creates a new review, the average rating for that product is
 updated in the datastore. The app may be configured to update the associated
@@ -97,7 +103,7 @@ product <code>search.Document</code> at the same time (the default), or do this 
 later time in batch (which is more efficient). See <code>cron.yaml</code> for an example
 of how to do this update periodically in batch.</p>
 
-<h2 id="searches">Searches</h2>
+<h2>Searches</h2>
 
 <p>Any valid queries can be typed into the search box. This includes simple word
 and phrase queries, but you may also submit queries that include references to
@@ -114,7 +120,7 @@ query string used for the query is displayed with the search results.</p>
 <p>Only product information is searched; product review text is not included in the
 search.</p>
 
-<h3 id="someexamplesearches">Some example searches</h3>
+<h3>Some example searches</h3>
 
 <p>Below are some example product queries, which assume the sample data has been loaded.
 As discussed above, not all of these queries are supported by the dev_appserver.</p>
@@ -126,14 +132,13 @@ As discussed above, not all of these queries are supported by the dev_appserver.
 <code>name:tv1</code><br/>
 <code>size &gt; 30</code></p>
 
-<h2 id="geosearch">Geosearch</h2>
+<h2>Geosearch</h2>
 
 <p>This application includes an example of using the Search API to perform
 location-based queries. Sample store location data is defined in <code>stores.py</code>,
 and is loaded along with the product data. The product details page for a
 product allows a search for stores within a given radius of the user&#8217;s current
 location. The user&#8217;s location is obtained from the browser.</p>
-
     </div>
   </div> <!-- End wrapper -->
 </body>

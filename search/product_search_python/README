@@ -23,6 +23,20 @@ A user does not need to be logged in to search the products, or to add reviews.
 A user must be logged in **as an admin of the app to add or modify product
 data**. The sidebar admin links are not displayed for non-admin users.
 
+## Configuration
+
+Before you deploy the application, edit `app.yaml` to specify your own app id and version.
+
+In `templates/product.html`, the Google Maps API is accessed.  It does not require an API key, but you are encouraged to use one to monitor your maps usage.  In the <head> element, look for:
+
+	src="https://maps.googleapis.com/maps/api/js?sensor=false"
+
+and replace it with something like the following, where `replaceWithYourAPIKey` is your own API key:
+
+      src="https://maps.googleapis.com/maps/api/js?sensor=false&amp;key=replaceWithYourAPIKey"
+
+as described [here](https://developers.google.com/maps/documentation/javascript/tutorial#api_key).
+
 ## Information About Running the App Locally
 
 Log in as an app admin to add and modify the app's product data.
@@ -38,15 +52,9 @@ The app is configured to use Python 2.7. On some platforms, it may also be
 necessary to have Python 2.7 installed locally when running the dev_appserver.
 The app's unit tests also require Python 2.7.
 
-**Locally, the documents index is not preserved across restarts of the dev app
-server**.  So, when running locally, you may want to re-initialize the sample
-app data upon each restart, as described below.
-
 When running the app locally, not all features of the search API are supported.
-So, not all search queries will give the same results during local testing as
-when run with the deployed app.  As one example, numeric comparison queries are
-not currently supported with the dev_appserver.  This means that filtering on
-product ratings is not supported locally.
+So, not all search queries may give the same results during local testing as
+when run with the deployed app.
 Be sure to test on a deployed version of your app as well as locally.
 
 ## Administering the deployed app
@@ -60,16 +68,11 @@ remove this restriction, you can edit the `login: admin` specification in
 ## Loading Sample Data
 
 When you first start up your app, you will want to add sample data to it.
-Because the `dev_appserver` does not preserve indexed document data between
-restarts, you will probably want to do this **each time you launch the app
-locally**. (This is not necessary for the deployed app, which will retain data
-between deployments).
 
 Sample product data can be added in two ways. First, sample product data in CSV
 format can be added in batch via a link on the app's admin page. Batch indexing
-of documents is more efficient than adding the documents one at a time. Note
-that because the `dev_appserver` does not preserve indexed document data between
-restarts, for consistency **the batch addition of sample data first removes all
+of documents is more efficient than adding the documents one at a time. For consistency,
+**the batch addition of sample data first removes all
 existing index and datastore product data**.
 
 The second way to add sample data is via the admin's "Create new product" link

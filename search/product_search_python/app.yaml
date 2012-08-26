@@ -10,7 +10,7 @@ handlers:
 
 - url: /admin/.*
   script: admin.application
-  login: admin
+  login: required
   secure: always
 
 - url: .*

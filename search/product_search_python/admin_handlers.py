@@ -44,6 +44,7 @@ def reinitAll(sample_data=True):
   Deletes all product entities and documents, essentially resetting the app
   state, then loads in static sample data if requested. Hardwired for the
   expected product types in the sample data.
+  (Re)loads store location data from stores.py as well.
   This function is intended to be run 'offline' (e.g., via a Task Queue task).
   As an extension to this functionality, the channel ID could be used to notify
   when done."""
@@ -93,9 +94,9 @@ def loadStoreLocationData():
     for s in slocs:
       logging.info("s: %s", s)
       geopoint = search.GeoPoint(s[3][0], s[3][1])
-      fields = [search.TextField(name='storename', value=s[1]),
-                search.TextField(name='address', value=s[2]),
-                search.GeoField(name='store_location', value=geopoint)
+      fields = [search.TextField(name=docs.Store.STORE_NAME, value=s[1]),
+                search.TextField(name=docs.Store.STORE_ADDRESS, value=s[2]),
+                search.GeoField(name=docs.Store.STORE_LOCATION, value=geopoint)
               ]
       d = search.Document(doc_id=s[0], fields=fields)
       try:

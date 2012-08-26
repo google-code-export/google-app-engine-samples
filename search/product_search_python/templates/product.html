@@ -4,7 +4,7 @@
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
     <script type="text/javascript">google.load("jquery", "1"); google.load("jqueryui", "1");</script>
     <script
-      src="https://maps.googleapis.com/maps/api/js?sensor=false&amp;key=AIzaSyBnHrQlzAB4uBKJNrmjtpVBsxX-bRix_6g"
+      src="https://maps.googleapis.com/maps/api/js?sensor=false"
       type="text/javascript"></script>
     <script type="text/javascript" src="/static/js/StyledMarker.js"></script>
 
@@ -79,11 +79,11 @@ function findLocation() {
             alert ('Timeout');
             break;
           case error.POSITION_UNAVAILABLE:
-            alert ('Position unavailable; using fake data (37.60, -122)');
+            alert ('Position unavailable; using fake data (37.60, -122).  If you are running from localhost, note that geosearch is not currently fully supported on the dev app server.');
             mapLocations(37.60, -122);
             break;
           case error.PERMISSION_DENIED:
-            alert ('Permission denied; using fake data.(-33.873038, 151.20563');
+            alert ('Permission denied; using fake data.(-33.873038, 151.20563).  If you are running from localhost, note that geosearch is not currently fully supported on the dev app server.');
             mapLocations(-33.873038, 151.20563);
             break;
           case error.UNKNOWN_ERROR:
