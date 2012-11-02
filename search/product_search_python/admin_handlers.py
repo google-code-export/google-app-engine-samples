@@ -100,7 +100,7 @@ def loadStoreLocationData():
               ]
       d = search.Document(doc_id=s[0], fields=fields)
       try:
-        add_result = search.Index(config.STORE_INDEX_NAME).add(d)
+        add_result = search.Index(config.STORE_INDEX_NAME).put(d)
       except search.Error:
         logging.exception("Error adding document:")
 

@@ -97,25 +97,25 @@ class BaseDocumentManager(object):
         # constraining the returned objects to contain only the doc ids,
         # extract the doc ids, and delete the docs.
         document_ids = [document.doc_id
-                        for document in docindex.list_documents(ids_only=True)]
+                        for document in docindex.get_range(ids_only=True)]
         if not document_ids:
           break
-        docindex.remove(document_ids)
+        docindex.delete(document_ids)
     except search.Error:
       logging.exception("Error removing documents:")
 
   @classmethod
   def getDoc(cls, doc_id):
     """Return the document with the given doc id. One way to do this is via
-    the list_documents method, as shown here.  If the doc id is not in the
+    the get_range method, as shown here.  If the doc id is not in the
     index, the first doc in the index will be returned instead, so we need
     to check for that case."""
     if not doc_id:
       return None
     try:
       index = cls.getIndex()
-      response = index.list_documents(
-          start_doc_id=doc_id, limit=1, include_start_doc=True)
+      response = index.get_range(
+          start_id=doc_id, limit=1, include_start_object=True)
       if response.results and response.results[0].doc_id == doc_id:
         return response.results[0]
       return None
@@ -126,7 +126,7 @@ class BaseDocumentManager(object):
   def removeDocById(cls, doc_id):
     """Remove the doc with the given doc id."""
     try:
-      cls.getIndex().remove(doc_id)
+      cls.getIndex().delete(doc_id)
     except search.Error:
       logging.exception("Error removing doc id %s.", doc_id)
 
@@ -134,7 +134,7 @@ class BaseDocumentManager(object):
   def add(cls, documents):
     """wrapper for search index add method; specifies the index name."""
     try:
-      return cls.getIndex().add(documents)
+      return cls.getIndex().put(documents)
     except search.Error:
       logging.exception("Error adding documents.")
 
@@ -538,7 +538,7 @@ class Product(BaseDocumentManager):
     # This will reindex if a doc with that doc id already exists
     doc_ids = cls.add(d)
     try:
-      doc_id = doc_ids[0].object_id
+      doc_id = doc_ids[0].id
     except IndexError:
       doc_id = None
       raise errors.OperationFailedError('could not index document')
