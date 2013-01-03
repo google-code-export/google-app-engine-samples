@@ -49,19 +49,13 @@ class BaseDocumentManager(object):
     """
     self.doc = doc
     fields = doc.fields
-    self.doc_map = {}
-    for field in fields:
-      fieldlist = self.doc_map.get(field.name,[])
-      fieldlist.append(field)
-      self.doc_map[field.name] = fieldlist
 
-  def getFirstFieldVal(self, fname):
-    """Get the value of the (first) document field with the given name."""
+  def getFieldVal(self, fname):
+    """Get the value of the document field with the given name.  If there is
+    more than one such field, the method returns None."""
     try:
-      return self.doc_map.get(fname)[0].value
-    except IndexError:
-      return None
-    except TypeError:
+      return self.doc.field(fname).value
+    except ValueError:
       return None
 
   def setFirstField(self, new_field):
@@ -267,19 +261,19 @@ class Product(BaseDocumentManager):
 
   def getPID(self):
     """Get the value of the 'pid' field of a Product doc."""
-    return self.getFirstFieldVal(self.PID)
+    return self.getFieldVal(self.PID)
 
   def getName(self):
     """Get the value of the 'name' field of a Product doc."""
-    return self.getFirstFieldVal(self.PRODUCT_NAME)
+    return self.getFieldVal(self.PRODUCT_NAME)
 
   def getDescription(self):
     """Get the value of the 'description' field of a Product doc."""
-    return self.getFirstFieldVal(self.DESCRIPTION)
+    return self.getFieldVal(self.DESCRIPTION)
 
   def getCategory(self):
     """Get the value of the 'cat' field of a Product doc."""
-    return self.getFirstFieldVal(self.CATEGORY)
+    return self.getFieldVal(self.CATEGORY)
 
   def setCategory(self, cat):
     """Set the value of the 'cat' (category) field of a Product doc."""
@@ -287,7 +281,7 @@ class Product(BaseDocumentManager):
 
   def getAvgRating(self):
     """Get the value of the 'ar' (average rating) field of a Product doc."""
-    return self.getFirstFieldVal(self.AVG_RATING)
+    return self.getFieldVal(self.AVG_RATING)
 
   def setAvgRating(self, ar):
     """Set the value of the 'ar' field of a Product doc."""
@@ -295,7 +289,7 @@ class Product(BaseDocumentManager):
 
   def getPrice(self):
     """Get the value of the 'price' field of a Product doc."""
-    return self.getFirstFieldVal(self.PRICE)
+    return self.getFieldVal(self.PRICE)
 
   @classmethod
   def generateRatingsBuckets(cls, query_string):
