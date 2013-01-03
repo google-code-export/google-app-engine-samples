@@ -12,19 +12,29 @@ import string
 import urllib
 from urlparse import urlparse
 
+import webapp2
+from webapp2_extras import jinja2
+
 from google.appengine.api import search
 from google.appengine.api import users
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp import template
-from google.appengine.ext.webapp.util import run_wsgi_app
-
 
 _INDEX_NAME = 'greeting'
 
-_ENCODE_TRANS_TABLE = string.maketrans('-: .@', '_____')
+# _ENCODE_TRANS_TABLE = string.maketrans('-: .@', '_____')
+
+class BaseHandler(webapp2.RequestHandler):
+    """The other handlers inherit from this class.  Provides some helper methods
+    for rendering a template."""
+
+    @webapp2.cached_property
+    def jinja2(self):
+      return jinja2.get_jinja2(app=self.app)
+
+    def render_template(self, filename, template_args):
+      self.response.write(self.jinja2.render_template(filename, **template_args))
 
 
-class MainPage(webapp.RequestHandler):
+class MainPage(BaseHandler):
     """Handles search requests for comments."""
 
     def get(self):
@@ -39,7 +49,7 @@ class MainPage(webapp.RequestHandler):
         expr_list = [search.SortExpression(
             expression='author', default_value='',
             direction=search.SortExpression.DESCENDING)]
-        # construct the sort options 
+        # construct the sort options
         sort_opts = search.SortOptions(
              expressions=expr_list)
         query_options = search.QueryOptions(
@@ -47,7 +57,6 @@ class MainPage(webapp.RequestHandler):
             sort_options=sort_opts)
         query_obj = search.Query(query_string=query, options=query_options)
         results = search.Index(name=_INDEX_NAME).search(query=query_obj)
-
         if users.get_current_user():
             url = users.create_logout_url(self.request.uri)
             url_linktext = 'Logout'
@@ -61,9 +70,7 @@ class MainPage(webapp.RequestHandler):
             'url': url,
             'url_linktext': url_linktext,
         }
-
-        path = os.path.join(os.path.dirname(__file__), 'index.html')
-        self.response.out.write(template.render(path, template_values))
+        self.render_template('index.html', template_values)
 
 
 def CreateDocument(author, content):
@@ -79,7 +86,7 @@ def CreateDocument(author, content):
                 search.DateField(name='date', value=datetime.now().date())])
 
 
-class Comment(webapp.RequestHandler):
+class Comment(BaseHandler):
     """Handles requests to index comments."""
 
     def post(self):
@@ -100,14 +107,7 @@ class Comment(webapp.RequestHandler):
             self.redirect('/')
 
 
-application = webapp.WSGIApplication(
+application = webapp2.WSGIApplication(
     [('/', MainPage),
      ('/sign', Comment)],
     debug=True)
-
-
-def main():
-    run_wsgi_app(application)
-
-if __name__ == '__main__':
-    main()
