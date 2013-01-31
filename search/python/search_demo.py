@@ -98,7 +98,7 @@ class Comment(BaseHandler):
         content = self.request.get('content')
         query = self.request.get('search')
         if content:
-            search.Index(name=_INDEX_NAME).add(CreateDocument(author, content))
+            search.Index(name=_INDEX_NAME).put(CreateDocument(author, content))
         if query:
             self.redirect('/?' + urllib.urlencode(
                 #{'query': query}))

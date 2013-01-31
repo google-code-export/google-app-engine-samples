@@ -10,7 +10,7 @@ import com.google.appengine.api.search.OperationResult;
 import com.google.appengine.api.search.Query;
 import com.google.appengine.api.search.QueryOptions;
 import com.google.appengine.api.search.Results;
-import com.google.appengine.api.search.RemoveException;
+import com.google.appengine.api.search.DeleteException;
 import com.google.appengine.api.search.ScoredDocument;
 import com.google.appengine.api.search.SearchServiceFactory;
 import com.google.appengine.api.search.StatusCode;
@@ -143,7 +143,7 @@ public class TextSearchServlet extends HttpServlet {
     Document doc = docBuilder.build();
     LOG.info("Adding document:\n" + doc.toString());
     try {
-      INDEX.add(doc);
+      INDEX.put(doc);
       return "Document added";
     } catch (RuntimeException e) {
       LOG.log(Level.SEVERE, "Failed to add " + doc, e);
@@ -243,9 +243,9 @@ public class TextSearchServlet extends HttpServlet {
     }
     List<String> docIdList = Arrays.asList(docIds);
     try {
-      INDEX.remove(docIdList);
+      INDEX.delete(docIdList);
       return "Documents " + docIdList + " removed";
-    } catch (RemoveException e) {
+    } catch (DeleteException e) {
       List<String> failedIds = findFailedIds(docIdList, e.getResults());
       LOG.log(Level.SEVERE, "Failed to remove documents " + failedIds, e);
       return "Remove failed for " + failedIds;
