@@ -203,6 +203,8 @@ def create_database(db_filename, discard_duplicates, custom_columns):
       '  pending_ms int,\n'
       '  exit_code int,\n'
       '  throttle_code int,\n'
+      '  instance text,\n'
+      '  app_engine_release text,\n'
       '  method text,\n'  # Not yet implemented.
       '  path text,\n'  # Not yet implemented.
       '  querystring text,\n'  # Not yet implemented.
