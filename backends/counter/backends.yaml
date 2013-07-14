@@ -4,7 +4,10 @@ backends:
   instances: 1
   class: B2
 
-- name: loadtest
-  start: loadtest.py
-  instances: 10
-  class: B1
+# NOTE: Disable the load test so that it does not automatically start in the
+# dev_appserver.
+#
+#- name: loadtest
+#  start: loadtest.py
+#  instances: 10
+#  class: B1
